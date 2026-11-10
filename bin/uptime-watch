@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# Watches websites, health endpoints and local ports, and makes the MX Master 4 vibrate
+# when one goes down (angry_alert) and when it comes back (happy_alert).
+#
+#   uptime-watch https://example.com http://localhost:3000/health localhost:5432
+#
+# Targets: an http(s) URL (up when it answers 2xx or 3xx) or host:port (up when it accepts a TCP connection).
+# Options:
+#   -i SECONDS   time between two checks (default 60)
+#   -t SECONDS   timeout of one check (default 10)
+#   -n COUNT     failed checks in a row before a target is reported down (default 2)
+#   -q           only print state changes
+#
+# Runs in the foreground; see bin/README.md to keep it running in the background.
+
+set -u
+
+interval=60
+timeout=10
+failures_needed=2
+quiet=0
+
+usage() { sed -n '2,15s/^# \{0,1\}//p' "$0"; }
+
+while getopts "i:t:n:qh" opt; do
+  case $opt in
+    i) interval=$OPTARG ;;
+    t) timeout=$OPTARG ;;
+    n) failures_needed=$OPTARG ;;
+    q) quiet=1 ;;
+    h) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+if [ $# -eq 0 ]; then
+  usage >&2
+  exit 2
+fi
+
+for n in "$interval" "$timeout" "$failures_needed"; do
+  case $n in '' | *[!0-9]* | 0) echo "uptime-watch: -i, -t and -n take a positive number" >&2; exit 2 ;; esac
+done
+
+haptic() {
+  local state url
+  if [ -n "${APPDATA:-}" ] && [ -d "${APPDATA:-}" ]; then state="$APPDATA/mx-dev-kit"; else state="$HOME/.config/mx-dev-kit"; fi
+  [ -e "$state/haptics.off" ] && return 0
+  url=${MX_HAPTIC_URL:-https://local.jmw.nz:41443/haptic}
+  curl -s -m 2 -o /dev/null -X POST -d '' --resolve local.jmw.nz:41443:127.0.0.1 "${url%/}/$1" >/dev/null 2>&1
+}
+
+# Prints a short reason and returns 0 when the target is up.
+check() {
+  local target=$1 code host port
+  case $target in
+    http://* | https://*)
+      code=$(curl -s -o /dev/null -L -m "$timeout" -w '%{http_code}' "$target")
+      case $code in
+        2?? | 3??) echo "HTTP $code"; return 0 ;;
+        000) echo "no answer"; return 1 ;;
+        *) echo "HTTP $code"; return 1 ;;
+      esac
+      ;;
+    *:*)
+      host=${target%:*}
+      port=${target##*:}
+      if command -v nc >/dev/null 2>&1; then
+        nc -z -w "$timeout" "$host" "$port" >/dev/null 2>&1 && { echo "port open"; return 0; }
+      else
+        (exec 3<>"/dev/tcp/$host/$port") >/dev/null 2>&1 && { echo "port open"; return 0; }
+      fi
+      echo "connection refused or timed out"
+      return 1
+      ;;
+    *)
+      echo "not a URL or host:port"
+      return 1
+      ;;
+  esac
+}
+
+declare -a state=() fails=()
+targets=("$@")
+for i in "${!targets[@]}"; do
+  state[i]=up
+  fails[i]=0
+done
+
+echo "Watching ${#targets[@]} target(s) every ${interval}s. Ctrl-C to stop."
+while :; do
+  for i in "${!targets[@]}"; do
+    target=${targets[i]}
+    reason=$(check "$target")
+    ok=$?
+    now=$(date '+%H:%M:%S')
+
+    if [ $ok -eq 0 ]; then
+      fails[i]=0
+      if [ "${state[i]}" = down ]; then
+        state[i]=up
+        echo "$now  UP    $target ($reason)"
+        haptic happy_alert
+      elif [ $quiet -eq 0 ]; then
+        echo "$now  ok    $target ($reason)"
+      fi
+    else
+      fails[i]=$((fails[i] + 1))
+      if [ "${state[i]}" = up ] && [ "${fails[i]}" -ge "$failures_needed" ]; then
+        state[i]=down
+        echo "$now  DOWN  $target ($reason)"
+        haptic angry_alert
+      elif [ $quiet -eq 0 ] && [ "${state[i]}" = down ]; then
+        echo "$now  down  $target ($reason)"
+      elif [ $quiet -eq 0 ]; then
+        echo "$now  fail  $target ($reason, ${fails[i]}/$failures_needed)"
+      fi
+    fi
+  done
+  sleep "$interval"
+done

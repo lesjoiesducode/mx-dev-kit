@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MxDevKit.Core/MxDevKit.Core.csproj" />
+    <Project Path="src/MxDevKitPlugin/MxDevKitPlugin.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MxDevKit.Core.Tests/MxDevKit.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/BubblePreview/BubblePreview.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,94 @@
+name: Release
+
+# Push a tag vX.Y.Z (the version of LoupedeckPackage.yaml, with its CHANGELOG section) to publish
+# MxDevKit.lplug4, the scripts archive and the installers. The build is tools/build-release.sh,
+# the same script as on a contributor's Mac: run it locally first.
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test, build, package and check
+        run: tools/build-release.sh --tag "$GITHUB_REF_NAME"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: |
+            dist/release/
+            dist/release-notes.md
+          if-no-files-found: error
+
+  # The same package on Windows: LogiPluginTool reads it, the PowerShell installer parses.
+  check-windows:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: dist
+
+      - name: Check the package and the installers
+        shell: pwsh
+        run: |
+          dotnet tool install --global LogiPluginTool --version 6.4.2.3599
+          $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+          logiplugintool verify dist\release\MxDevKit.lplug4
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          logiplugintool metadata dist\release\MxDevKit.lplug4
+          Get-Content dist\release\SHA256SUMS | ForEach-Object {
+            $hash, $name = $_ -split '\s+', 2
+            if ((Get-FileHash -Algorithm SHA256 "dist\release\$name").Hash -ne $hash.ToUpperInvariant()) { throw "${name}: checksum mismatch" }
+          }
+          Expand-Archive dist\release\mx-dev-kit.zip -DestinationPath kit
+          $failed = $false
+          Get-ChildItem kit -Recurse -Filter *.ps1 | ForEach-Object {
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errors)
+            if ($errors) { $errors | ForEach-Object { Write-Host "$($_.Extent.File):$($_.Extent.StartLineNumber) $($_.Message)" }; $failed = $true }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Install the scripts with Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $env:APPDATA = Join-Path $env:RUNNER_TEMP 'appdata'
+          & .\kit\mx-dev-kit\install.ps1 -Only hooks
+          if (-not (Test-Path (Join-Path $env:APPDATA 'mx-dev-kit\uninstall.ps1'))) { throw 'uninstall.ps1 not installed' }
+          & (Join-Path $env:APPDATA 'mx-dev-kit\uninstall.ps1') -Purge
+
+  publish:
+    needs: [build, check-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: dist
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/release/* \
+            --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes-file dist/release-notes.md --verify-tag

@@ -1,0 +1,32 @@
+# Waveform played on the MX Master 4 for each plugin event.
+# Available waveforms: sharp_state_change, damp_state_change, sharp_collision, damp_collision,
+# subtle_collision, happy_alert, angry_alert, completed, square, wave, firework, mad, knock,
+# jingle, ringing.
+
+haptics:
+    actionSucceeded:
+        DEFAULT: completed
+    actionFailed:
+        DEFAULT: angry_alert
+    ciPassed:
+        DEFAULT: happy_alert
+    ciFailed:
+        DEFAULT: angry_alert
+    reviewRequested:
+        DEFAULT: knock
+    mentioned:
+        DEFAULT: knock
+    assigned:
+        DEFAULT: knock
+    prApproved:
+        DEFAULT: happy_alert
+    prMerged:
+        DEFAULT: happy_alert
+    changesRequested:
+        DEFAULT: angry_alert
+    prCiFailed:
+        DEFAULT: angry_alert
+    focusEnded:
+        DEFAULT: jingle
+    breakEnded:
+        DEFAULT: knock

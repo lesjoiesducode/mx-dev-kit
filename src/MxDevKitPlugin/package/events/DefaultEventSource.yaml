@@ -1,0 +1,43 @@
+# Haptic events raised by the plugin (see src/MxDevKit.Core/HapticEvents.cs).
+# Names are case-sensitive and must match the code and extra/eventMapping.yaml.
+
+events:
+    - name: actionSucceeded
+      displayName: Git action succeeded
+      description: A commit, push or pull started from a bubble has finished
+    - name: actionFailed
+      displayName: Git action failed
+      description: A commit, push or pull started from a bubble has failed
+    - name: ciPassed
+      displayName: CI passed
+      description: The workflow run shown by the CI bubble has just passed
+    - name: ciFailed
+      displayName: CI failed
+      description: The workflow run shown by the CI bubble has just failed or been cancelled
+    - name: reviewRequested
+      displayName: Review requested
+      description: A new pull request is waiting for your review
+    - name: mentioned
+      displayName: Mentioned on GitHub
+      description: You or one of your teams was mentioned in an issue or a pull request
+    - name: assigned
+      displayName: Assigned on GitHub
+      description: An issue or a pull request was assigned to you
+    - name: prApproved
+      displayName: Pull request approved
+      description: Someone approved one of your pull requests
+    - name: prMerged
+      displayName: Pull request merged
+      description: One of your pull requests was merged
+    - name: changesRequested
+      displayName: Changes requested
+      description: Someone asked for changes on one of your pull requests
+    - name: prCiFailed
+      displayName: CI failed on your pull request
+      description: The checks of one of your open pull requests have just failed
+    - name: focusEnded
+      displayName: Focus session over
+      description: The focus timer reached the end of the session
+    - name: breakEnded
+      displayName: Break over
+      description: The break that follows a focus session is over

@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+!/bin/
+/dist/
+*.lplug4
+TestResults/
+
+# Editors and OS
+.vs/
+.idea/
+*.user
+*.suo
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Backups made by the installers when run from the repository folder
+*.bak-*
+
+# Python bytecode of the test helpers
+__pycache__/

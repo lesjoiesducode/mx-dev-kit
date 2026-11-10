@@ -1,0 +1,96 @@
+#!/bin/sh
+# Shows a system notification. The plugin, docker-watch and your own scripts use it.
+#
+#   mx-notify <title> <text> [url]      a click on the notification opens the URL
+#
+# macOS: terminal-notifier when it is installed (brew install terminal-notifier), clickable.
+#        Otherwise AppleScript: the notification shows, a click opens nothing.
+# Windows (Git Bash): hands over to mx-notify.ps1, a native toast, clickable.
+# Linux: notify-send, not clickable.
+#
+# MX_NOTIFY_WITH forces terminal-notifier, osascript or notify-send.
+# A file named notifications.off in the state folder mutes every notification of the kit.
+
+if [ $# -lt 2 ] || [ $# -gt 3 ] || [ "$1" = -h ] || [ "$1" = --help ]; then
+  sed -n '2,12s/^# \{0,1\}//p' "$0"
+  case ${1:-} in -h | --help) exit 0 ;; esac
+  exit 2
+fi
+
+title=$1
+text=$2
+url=${3:-}
+
+if [ -n "${APPDATA:-}" ] && [ -d "${APPDATA:-}" ]; then
+  state="$APPDATA/mx-dev-kit"
+else
+  state="$HOME/.config/mx-dev-kit"
+fi
+[ -e "$state/notifications.off" ] && exit 0
+
+here=$(cd "$(dirname "$0")" && pwd)
+
+case $(uname -s) in
+  MINGW* | MSYS* | CYGWIN*)
+    script="$here/mx-notify.ps1"
+    command -v cygpath >/dev/null 2>&1 && script=$(cygpath -w "$script")
+    exec powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$script" "$title" "$text" "$url"
+    ;;
+esac
+
+# The plugin and launchd jobs do not get your shell's PATH: look where Homebrew puts things too.
+find_tool() {
+  old_ifs=$IFS
+  IFS=:
+  for d in $PATH /opt/homebrew/bin /usr/local/bin; do
+    if [ -n "$d" ] && [ -x "$d/$1" ]; then
+      IFS=$old_ifs
+      printf '%s\n' "$d/$1"
+      return 0
+    fi
+  done
+  IFS=$old_ifs
+  return 1
+}
+
+# terminal-notifier reads its arguments as user defaults: a value that starts with
+# [ ( { < " or - has to be escaped, or it is parsed as something else.
+escape() {
+  case $1 in
+    [\[\(\{\<\"-]*) printf '\\%s' "$1" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+with=${MX_NOTIFY_WITH:-}
+if [ -z "$with" ]; then
+  if [ "$(uname -s)" = Darwin ]; then
+    if find_tool terminal-notifier >/dev/null; then with=terminal-notifier; else with=osascript; fi
+  else
+    with=notify-send
+  fi
+fi
+
+case $with in
+  terminal-notifier)
+    tool=$(find_tool terminal-notifier) || { echo "mx-notify: terminal-notifier not found (brew install terminal-notifier)" >&2; exit 1; }
+    if [ -n "$url" ]; then
+      "$tool" -title "$(escape "$title")" -message "$(escape "$text")" -open "$url" >/dev/null
+    else
+      "$tool" -title "$(escape "$title")" -message "$(escape "$text")" >/dev/null
+    fi
+    ;;
+  osascript)
+    # Arguments go through argv: no quoting problem whatever the text.
+    osascript -e 'on run argv' -e 'display notification (item 2 of argv) with title (item 1 of argv)' -e 'end run' \
+      "$title" "$text" >/dev/null
+    ;;
+  notify-send)
+    tool=$(find_tool notify-send) || { echo "mx-notify: notify-send not found" >&2; exit 1; }
+    "$tool" -- "$title" "$text"
+    ;;
+  *)
+    echo "mx-notify: MX_NOTIFY_WITH must be terminal-notifier, osascript or notify-send" >&2
+    exit 2
+    ;;
+esac

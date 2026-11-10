@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build MxDevKit.slnx -c Release
+
+      - name: Unit tests
+        run: dotnet test tests/MxDevKit.Core.Tests -c Release
+
+      - name: Check shell scripts
+        if: runner.os == 'macOS'
+        run: |
+          for f in bin/haptic bin/mx-notify bin/docker-watch hooks/*.sh install.sh uninstall.sh tests/shell/run.sh tools/build-release.sh; do sh -n "$f"; done
+          bash -n bin/uptime-watch shell/mx.bash
+          zsh -n shell/mx.zsh
+
+      - name: Command-line tool tests
+        if: runner.os == 'macOS'
+        run: sh tests/shell/run.sh
+
+      - name: Release package (the same script as the release workflow)
+        if: runner.os == 'macOS'
+        run: tools/build-release.sh --skip-tests
+
+      - name: Hook installer smoke test
+        if: runner.os == 'macOS'
+        run: |
+          set -eu
+          export HOME=$(mktemp -d) CODEX_HOME=$(mktemp -d) MX_HAPTIC_URL=http://127.0.0.1:9/haptic
+          printf '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"true"}]}]}}\n' > "$CODEX_HOME/hooks.json"
+          sh hooks/install.sh --codex
+          sh hooks/install.sh --codex | grep -q 'already up to date'
+          test "$(jq '.hooks.Stop | length' "$CODEX_HOME/hooks.json")" = 2
+          test "$(jq '.hooks.PermissionRequest | length' "$CODEX_HOME/hooks.json")" = 1
+          ls "$CODEX_HOME"/hooks.json.bak-* >/dev/null
+          echo '{}' | sh "$HOME/.config/mx-dev-kit/bin/agent-haptics.sh" codex Stop
+          sh "$HOME/.config/mx-dev-kit/bin/agent-haptics.sh" codex '{"type":"agent-turn-complete"}' < /dev/null
+          sh hooks/uninstall.sh
+          test "$(jq -c . "$CODEX_HOME/hooks.json")" = '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"true"}]}]}}'
+          export COPILOT_HOME=$(mktemp -d)
+          sh hooks/install.sh --copilot
+          test "$(jq -r '.version' "$COPILOT_HOME/hooks/mx-dev-kit.json")" = 1
+          test "$(jq '.hooks | keys | length' "$COPILOT_HOME/hooks/mx-dev-kit.json")" = 3
+          echo '{"stopReason":"end_turn"}' | sh "$HOME/.config/mx-dev-kit/bin/agent-haptics.sh" copilot agentStop
+          sh hooks/uninstall.sh
+          test ! -e "$COPILOT_HOME/hooks/mx-dev-kit.json"
+
+      - name: Check PowerShell scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem -Recurse -Filter *.ps1 | ForEach-Object {
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errors)
+            if ($errors) { $errors | ForEach-Object { Write-Host "$($_.Extent.File):$($_.Extent.StartLineNumber) $($_.Message)" }; $failed = $true }
+          }
+          if ($failed) { exit 1 }

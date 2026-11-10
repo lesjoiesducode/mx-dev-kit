@@ -1,0 +1,186 @@
+#!/bin/sh
+# Watches Docker containers and makes the MX Master 4 vibrate when one dies (angry_alert), restarts
+# in a loop (angry_alert, once) or becomes healthy again (happy_alert), with a notification that says
+# which one and why.
+#
+#   docker-watch                containers of the compose project of this folder, or all of them
+#   docker-watch --all          every container
+#   docker-watch -p NAME        the containers of one compose project
+#   docker-watch -q             only print what vibrates
+#
+# Reads the `docker events` stream, nothing else: no setting, the same on Docker Desktop for
+# macOS and Windows. A container stopped on purpose (docker stop, docker compose down) stays quiet.
+# Runs in the foreground; see bin/README.md to keep it running in the background.
+
+set -u
+
+all=0
+project=
+quiet=0
+usage() { sed -n '2,14s/^# \{0,1\}//p' "$0"; }
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    -a | --all) all=1 ;;
+    -p | --project)
+      [ $# -ge 2 ] || { usage >&2; exit 2; }
+      project=$2
+      shift
+      ;;
+    -q | --quiet) quiet=1 ;;
+    -h | --help) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
+  esac
+  shift
+done
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "docker-watch: docker not found (Docker Desktop, or any Docker engine with its CLI)" >&2
+  exit 1
+fi
+
+here=$(cd "$(dirname "$0")" && pwd)
+tab=$(printf '\t')
+
+haptic() {
+  if [ -n "${APPDATA:-}" ] && [ -d "${APPDATA:-}" ]; then s="$APPDATA/mx-dev-kit"; else s="$HOME/.config/mx-dev-kit"; fi
+  [ -e "$s/haptics.off" ] && return 0
+  url=${MX_HAPTIC_URL:-https://local.jmw.nz:41443/haptic}
+  curl -s -m 2 -o /dev/null -X POST -d '' --resolve local.jmw.nz:41443:127.0.0.1 "${url%/}/$1" >/dev/null 2>&1
+}
+
+notify() {
+  if [ -x "$here/mx-notify" ]; then
+    "$here/mx-notify" "$1" "$2" >/dev/null 2>&1
+  elif command -v mx-notify >/dev/null 2>&1; then
+    mx-notify "$1" "$2" >/dev/null 2>&1
+  fi
+}
+
+# The compose project of this folder: the first folder with a compose file, up to the git root.
+# Compose labels its containers with that folder (com.docker.compose.project.working_dir).
+dirs=
+if [ "$all" = 0 ] && [ -z "$project" ]; then
+  top=$(git rev-parse --show-toplevel 2>/dev/null || echo /)
+  d=$(pwd)
+  while :; do
+    for f in compose.yaml compose.yml docker-compose.yaml docker-compose.yml; do
+      if [ -f "$d/$f" ]; then
+        dirs=$d
+        break 2
+      fi
+    done
+    [ "$d" = "$top" ] || [ "$d" = / ] || [ -z "$d" ] && break
+    d=$(dirname "$d")
+  done
+  if [ -n "$dirs" ]; then
+    # Compose may have recorded the path with or without symlinks resolved, or as a Windows path.
+    physical=$(cd "$dirs" && pwd -P)
+    [ "$physical" != "$dirs" ] && dirs="$dirs|$physical"
+    command -v cygpath >/dev/null 2>&1 && dirs="$dirs|$(cygpath -m "$dirs")"
+  fi
+fi
+dirs=$(printf '%s' "$dirs" | sed 's|\\|/|g')
+
+if [ -n "$project" ]; then
+  scope="the containers of the compose project $project"
+elif [ -n "$dirs" ]; then
+  scope="the containers of the compose project in ${dirs%%|*} (--all for every container)"
+else
+  scope="every container"
+fi
+
+# One line per event: time in ns, action, id, name, exit code, compose folder, project, service.
+format="{{.TimeNano}}$tab{{.Action}}$tab{{.Actor.ID}}$tab{{index .Actor.Attributes \"name\"}}$tab{{index .Actor.Attributes \"exitCode\"}}$tab{{index .Actor.Attributes \"com.docker.compose.project.working_dir\"}}$tab{{index .Actor.Attributes \"com.docker.compose.project\"}}$tab{{index .Actor.Attributes \"com.docker.compose.service\"}}"
+
+# The state machine. Prints "say<TAB>text" for the terminal and
+# "alert<TAB>waveform<TAB>title<TAB>text<TAB>line" for what vibrates and notifies.
+program='
+BEGIN { FS = "\t"; n = split(seed, s, " "); for (i = 1; i <= n; i++) health[s[i]] = "unhealthy"; ndirs = split(dirs, d, "|") }
+function norm(p) { p = tolower(p); gsub(/\\/, "/", p); sub(/\/+$/, "", p); return p }
+function inscope(wd, proj,   i) {
+  if (project != "") return proj == project
+  if (ndirs == 0) return 1
+  for (i = 1; i <= ndirs; i++) if (norm(wd) == norm(d[i])) return 1
+  return 0
+}
+function secs(ns) { return length(ns) > 9 ? substr(ns, 1, length(ns) - 9) + substr(ns, length(ns) - 8, 3) / 1000 : ns + 0 }
+function where(svc, proj) { return svc != "" ? ", service " svc " of " proj : "" }
+function say(text) { print "say\t" text; fflush() }
+function alert(wave, title, text, line) { print "alert\t" wave "\t" title "\t" text "\t" line; fflush() }
+{
+  t = secs($1); action = $2; id = $3; name = $4; code = $5
+  if (name == "" || !inscope($6, $7)) next
+
+  if (action == "kill" || action == "stop") { intended[id] = t; next }
+  if (action == "oom") { oom[id] = t; next }
+
+  if (action ~ /^health_status/) {
+    state = action; sub(/^health_status: */, "", state)
+    if (state == "unhealthy" && health[name] != "unhealthy") say("unhealthy " name)
+    if (state == "healthy" && health[name] == "unhealthy")
+      alert("happy_alert", name " is healthy again", "Its healthcheck passes again" where($8, $7) ".", "HEALTHY  " name " (healthy again)")
+    if (state == "healthy" || state == "unhealthy") health[name] = state
+    next
+  }
+
+  if (action != "die") next
+  out = (id in oom) && t - oom[id] <= 5
+  delete oom[id]
+  if (!out && (id in intended) && t - intended[id] <= 5) { delete intended[id]; say("stopped  " name " (on purpose)"); next }
+  if (!out && code == "0") { say("exited   " name " (exit 0)"); next }
+  reason = out ? "out of memory" : "exit code " code
+  label = out ? "OOM      " : "DIED     "
+
+  if ((name in quietuntil) && t < quietuntil[name]) { say("died     " name " (" reason ", restarting in a loop)"); next }
+
+  # Deaths of the last 60 s.
+  m = split(deaths[name], past, " "); kept = ""; count = 1
+  for (i = 1; i <= m; i++) if (t - past[i] <= 60) { kept = kept " " past[i]; count++ }
+  deaths[name] = kept " " t
+
+  if (count >= 3) {
+    deaths[name] = ""; quietuntil[name] = t + 600
+    alert("angry_alert", name " restarts in a loop", "Died " count " times in a minute (last: " reason ")" where($8, $7) ". Quiet about it for 10 minutes.",
+      "LOOP     " name " (died " count " times in 60 s, quiet for 10 min)")
+  } else if (count == 1) {
+    alert("angry_alert", name (out ? " ran out of memory" : " died"), toupper(substr(reason, 1, 1)) substr(reason, 2) where($8, $7) ".", label name " (" reason ")")
+  } else {
+    say("died     " name " (" reason ", again)")
+  }
+}'
+
+echo "Watching $scope. Ctrl-C to stop."
+waiting=0
+while :; do
+  if ! docker info >/dev/null 2>&1; then
+    [ "$waiting" = 0 ] && echo "$(date '+%H:%M:%S')  Docker is not running: waiting for it..."
+    waiting=1
+    [ "${MX_DOCKER_EVENTS_ONCE:-0}" = 1 ] && exit 1
+    sleep 10
+    continue
+  fi
+  waiting=0
+
+  seed=$(docker ps --filter health=unhealthy --format '{{.Names}}' 2>/dev/null | tr '\n' ' ')
+  docker events --filter type=container --filter event=die --filter event=oom --filter event=kill \
+    --filter event=stop --filter event=health_status --format "$format" 2>/dev/null \
+    | awk -v seed="$seed" -v dirs="$dirs" -v project="$project" "$program" \
+    | { while IFS="$tab" read -r kind a b c d; do
+        now=$(date '+%H:%M:%S')
+        if [ "$kind" = alert ]; then
+          echo "$now  $d"
+          haptic "$a"
+          notify "$b" "$c" &
+        elif [ "$quiet" = 0 ]; then
+          echo "$now  $a"
+        fi
+      done
+      wait
+    }
+
+  # MX_DOCKER_EVENTS_ONCE=1: stop when the stream ends instead of reconnecting (tests).
+  [ "${MX_DOCKER_EVENTS_ONCE:-0}" = 1 ] && wait && exit 0
+  echo "$(date '+%H:%M:%S')  Lost the Docker events stream, reconnecting..."
+  sleep 5
+done

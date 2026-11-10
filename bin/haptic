@@ -1,0 +1,45 @@
+#!/bin/sh
+# Plays a waveform on the MX Master 4 through the Haptic Web Plugin.
+#
+#   haptic completed      play one waveform
+#   haptic --list         waveforms the plugin knows
+#
+# MX_HAPTIC_URL changes the endpoint (default https://local.jmw.nz:41443/haptic).
+# A file named haptics.off in the state folder mutes every vibration of the kit.
+
+url=${MX_HAPTIC_URL:-https://local.jmw.nz:41443/haptic}
+url=${url%/}
+
+if [ -n "${APPDATA:-}" ] && [ -d "${APPDATA:-}" ]; then
+  state="$APPDATA/mx-dev-kit"
+else
+  state="$HOME/.config/mx-dev-kit"
+fi
+
+# local.jmw.nz is a public name for 127.0.0.1: resolve it locally so it works offline.
+resolve="--resolve local.jmw.nz:41443:127.0.0.1"
+
+case ${1:-} in
+  ""|-h|--help)
+    sed -n '2,9s/^# \{0,1\}//p' "$0"
+    [ -n "${1:-}" ]
+    exit
+    ;;
+  -l|--list)
+    # shellcheck disable=SC2086
+    curl -sS -m 3 $resolve "${url%/haptic}/waveforms"
+    echo
+    exit
+    ;;
+esac
+
+[ -e "$state/haptics.off" ] && exit 0
+
+# shellcheck disable=SC2086
+code=$(curl -s -m 3 -o /dev/null -w '%{http_code}' -X POST -d '' $resolve "$url/$1")
+case $code in
+  2??) exit 0 ;;
+  000) echo "haptic: Haptic Web Plugin unreachable at $url (is it installed and is Logi Options+ running?)" >&2 ;;
+  *) echo "haptic: HTTP $code for '$1' (haptic --list shows the waveforms)" >&2 ;;
+esac
+exit 1

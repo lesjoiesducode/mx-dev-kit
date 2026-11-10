@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Loupedeck.MxDevKitPlugin</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <Version>1.0.0</Version>
+    <Deterministic>true</Deterministic>
+    <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../'))=/_/</PathMap>
+
+    <!-- bin/<Configuration>/ is the package root (metadata/, events/), the DLL goes to its bin/ subfolder. -->
+    <BaseOutputPath>$(MSBuildThisFileDirectory)bin/</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)/bin/</OutputPath>
+    <PackageRoot>$(BaseOutputPath)$(Configuration)/</PackageRoot>
+    <LinkTarget>$([System.IO.Path]::GetFullPath('$(BaseOutputPath)$(Configuration)'))</LinkTarget>
+
+    <PluginShortName>MxDevKit</PluginShortName>
+    <PluginDir Condition="'$(OS)' == 'Windows_NT'">$(LocalAppData)/Logi/LogiPluginService/Plugins/</PluginDir>
+    <PluginDir Condition="'$(OS)' != 'Windows_NT'">$(HOME)/Library/Application Support/Logi/LogiPluginService/Plugins/</PluginDir>
+
+    <!-- The plugin template links every build into Logi Plugin Service. Here it is opt-in:
+         dotnet build -p:LinkPlugin=true, which is what install.sh does in link mode. -->
+    <LinkPlugin Condition="'$(LinkPlugin)' == ''">false</LinkPlugin>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LogiPluginApi" Version="6.*" ExcludeAssets="runtime;native" />
+    <Compile Include="..\MxDevKit.Core\**\*.cs" Exclude="..\MxDevKit.Core\bin\**;..\MxDevKit.Core\obj\**" LinkBase="Core" />
+    <None Include="package\**\*" />
+    <!-- mx-notify travels with the plugin, so that notifications work with the .lplug4 alone. -->
+    <None Include="..\..\bin\mx-notify;..\..\bin\mx-notify.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <Using Include="MxDevKit" />
+  </ItemGroup>
+
+  <!-- LogiPluginApi brings StyleCop along; this repository does not follow its layout rules. -->
+  <Target Name="DropStyleCop" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="$([System.String]::Copy('%(Filename)').StartsWith('StyleCop'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyPackage" AfterTargets="PostBuildEvent">
+    <ItemGroup>
+      <PackageFiles Include="package\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PackageFiles)" DestinationFolder="$(PackageRoot)%(RecursiveDir)" />
+  </Target>
+
+  <Target Name="LinkToPluginService" AfterTargets="CopyPackage" Condition="'$(LinkPlugin)' == 'true'">
+    <MakeDir Directories="$(PluginDir)" />
+    <WriteLinesToFile File="$(PluginDir)$(MSBuildProjectName).link" Lines="$(LinkTarget)" Overwrite="true" />
+    <Message Text="Linked $(LinkTarget) into $(PluginDir)$(MSBuildProjectName).link" Importance="High" />
+    <Exec Condition="'$(OS)' == 'Windows_NT' and '$(ReloadPlugin)' != 'false'" Command="start loupedeck://plugin/$(PluginShortName)/reload" ContinueOnError="true" />
+    <Exec Condition="'$(OS)' != 'Windows_NT' and '$(ReloadPlugin)' != 'false'" Command="open loupedeck://plugin/$(PluginShortName)/reload" ContinueOnError="true" />
+  </Target>
+
+  <Target Name="UnlinkFromPluginService" AfterTargets="CoreClean" Condition="'$(LinkPlugin)' == 'true'">
+    <Delete Files="$(PluginDir)$(MSBuildProjectName).link" />
+  </Target>
+
+  <Target Name="CleanPackageRoot" AfterTargets="CoreClean">
+    <RemoveDir Directories="$(PackageRoot)" />
+  </Target>
+
+</Project>

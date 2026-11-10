@@ -1,0 +1,95 @@
+// Copy to ~/.config/mx-dev-kit/config.json (macOS)
+// or %APPDATA%\mx-dev-kit\config.json (Windows).
+// Every key is optional: delete what you do not change. The plugin reloads the file when it is saved.
+{
+  // auto (system language), en or fr. Action names in Options+ change after a plugin restart.
+  "language": "auto",
+
+  "haptics": {
+    // sdk: the plugin's own haptic events. http: through the Haptic Web Plugin. off: silent.
+    "mode": "sdk",
+    "url": "https://local.jmw.nz:41443/haptic/",
+    // http mode only. Events: actionSucceeded, actionFailed, ciPassed, ciFailed, reviewRequested,
+    // mentioned, assigned, prApproved, prMerged, changesRequested, prCiFailed, focusEnded, breakEnded.
+    "waveforms": { "ciPassed": "happy_alert" }
+  },
+
+  "git": {
+    // git fetch in the background, so the Pull bubble knows about new commits. 0 = never.
+    "fetchMinutes": 3
+  },
+
+  "github": {
+    "enabled": true,
+    "refreshSeconds": 60,
+    "runningRefreshSeconds": 15,
+    "notifyCi": true,
+    // Any GitHub search. Add team requests with review-requested:@me instead.
+    "reviewQuery": "is:open is:pr user-review-requested:@me archived:false",
+    // The GitHub inbox: each event vibrates and shows a notification. false: ignored.
+    "events": {
+      "reviewRequested": true,
+      "mention": true,
+      "teamMention": true,
+      "assigned": true,
+      "approved": true,
+      "changesRequested": true,
+      "merged": true,
+      "ciFailed": true
+    }
+  },
+
+  "audit": {
+    "enabled": true,
+    "refreshMinutes": 15,
+    // low, moderate, high or critical: lowest severity that counts.
+    "minSeverity": "high",
+    // auto: osv-scanner when it is installed (every lockfile: npm, Python, PHP, Go, Rust, .NET...),
+    // npm audit otherwise. osv or npm: only that one.
+    "tool": "auto",
+    // osv-scanner: what an advisory without any score counts as.
+    "unknownSeverity": "high"
+  },
+
+  "commit": {
+    // Optional. Without it, the message is built from the file list ("Update app.ts and 2 more files").
+    // The staged diff goes to standard input; {prompt} is replaced by "prompt" below.
+    // "messageCommand": ["claude", "-p", "{prompt}", "--model", "haiku"],
+    "messageCommand": null,
+    "prompt": "Write a git commit message for the diff below: a single line, 72 characters at most, imperative mood, no prefix, no quotes. Reply with the message only."
+  },
+
+  "agent": {
+    // macOS: auto (Terminal), Terminal or iTerm. Windows: auto, wt, powershell or pwsh.
+    // For every agent bubble: Claude Code, Codex, Gemini CLI, Copilot CLI and Agent in project.
+    "terminal": "auto",
+    // Any other terminal: {dir} and {command} are replaced.
+    // "launch": ["open", "-na", "Ghostty", "--args", "--working-directory={dir}", "-e", "{command}"],
+    // Command lines of the agent bubbles, when the plain claude, codex, gemini or copilot is not enough.
+    // "commands": { "claude": "claude --continue", "codex": "codex --full-auto" },
+    // Agent in project: any other agent or tool, its name in Options+ and its colour.
+    "label": "Claude Code",
+    "command": "claude",
+    "color": "#161B22"
+  },
+
+  "focus": {
+    "minutes": 25,
+    "breakMinutes": 5
+  },
+
+  "notifications": {
+    // System notifications from the plugin (bin/mx-notify), for the GitHub inbox. false: vibrations only.
+    "enabled": true
+  },
+
+  // macOS: the front Finder window counts as the current folder too.
+  "followFinder": true,
+
+  // Only when a tool is not found on its own (the plugin does not see your shell's PATH).
+  "tools": {
+    // "gh": "/opt/homebrew/bin/gh",
+    // "npm": "/usr/local/bin/npm",
+    // "osv-scanner": "/opt/homebrew/bin/osv-scanner"
+  }
+}
