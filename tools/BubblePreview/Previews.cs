@@ -42,22 +42,6 @@ internal static class Previews
         File.WriteAllBytes(path, canvas.ToArray(BitmapImageFormat.Png));
     }
 
-    // Eight small bubbles around a centre, in the colours of the plugin.
-    public static void SaveIcon(string path)
-    {
-        using var b = new BitmapBuilder(256, 256);
-        b.Clear(BubblePainter.Color(Palette.Slate));
-        var colours = new[] { Palette.Green, Palette.Purple, Palette.Red, Palette.Amber, Palette.Blue, Palette.Orange, Palette.Tomato, new Rgb(139, 148, 158) };
-        for (var i = 0; i < 8; i++)
-        {
-            var a = -Math.PI / 2 + i * Math.PI / 4;
-            b.FillCircle(128 + (float)(Math.Cos(a) * 82), 128 + (float)(Math.Sin(a) * 82), 27, BubblePainter.Color(colours[i]));
-        }
-
-        b.FillCircle(128, 128, 15, new BitmapColor(110, 118, 129));
-        File.WriteAllBytes(path, b.ToArray(BitmapImageFormat.Png));
-    }
-
     private static void DrawRing(BitmapBuilder canvas, Bubble[] ring, int hovered, int cx, int cy)
     {
         var close = Diameter * 0.32f;

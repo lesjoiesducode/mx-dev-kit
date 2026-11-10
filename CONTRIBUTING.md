@@ -52,3 +52,5 @@ dotnet run --project tools/BubblePreview
 ```
 
 It loads `BitmapBuilder` and Skia from your Logi Plugin Service installation (macOS; on Windows set `LOGI_PLUGIN_SERVICE_DIR` if it is not in Program Files).
+
+The plugin icon is `tools/icon/icon.svg`. `tools/icon/render.sh` turns it into `Icon256x256.png` (needs `rsvg-convert`: `brew install librsvg`).

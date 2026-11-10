@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 using MxDevKit.Preview;
 
 // dotnet run --project tools/BubblePreview [repository root]
-// Writes docs/img/bubbles/*.png, docs/img/ring-*.png and the plugin icon.
+// Writes docs/img/bubbles/*.png and docs/img/ring-*.png. The plugin icon comes from tools/icon.
 var root = Path.GetFullPath(args.Length > 0 ? args[0] : FindRoot());
 var service = LogiRuntime.Init();
 Console.WriteLine($"Logi Plugin Service: {service}");
@@ -37,6 +37,5 @@ static void Render(string root)
     Previews.SaveRing(Samples.OverviewRing(), 7, Path.Combine(images, "ring-overview.png"));
     Previews.SaveRing(Samples.FrenchRing(), 4, Path.Combine(images, "ring-french.png"));
     Previews.SavePair(Samples.ProjectRing(), 2, Samples.OverviewRing(), 7, Path.Combine(images, "hero.png"));
-    Previews.SaveIcon(Path.Combine(root, "src", "MxDevKitPlugin", "package", "metadata", "Icon256x256.png"));
-    Console.WriteLine("  ring-project.png, ring-overview.png, ring-french.png, hero.png, Icon256x256.png");
+    Console.WriteLine("  ring-project.png, ring-overview.png, ring-french.png, hero.png");
 }
