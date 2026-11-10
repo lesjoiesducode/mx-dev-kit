@@ -37,7 +37,7 @@ Logitech, Logi, MX Master, Logi Options+ and Actions Ring are trademarks of Logi
 
 - [Logi Options+](https://www.logitech.com/en-us/software/logi-options-plus) on macOS or Windows 10/11. It brings Logi Plugin Service 6.4 or later, which runs the plugin.
 - A Logitech device that opens the Actions Ring. Vibrations need an **MX Master 4**, the only device with a haptic motor.
-- The free **Haptic Web Plugin**, from the Marketplace inside Options+, for the vibrations of the hooks, the shell and the watchers. The plugin's own vibrations work without it.
+- The free [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W (MIT license), for the vibrations of the hooks, the shell and the watchers. The installer offers to install it for you, or you can get it from the Marketplace inside Options+. The plugin's own vibrations work without it.
 
 Some features use a tool you may already have. Without it, that feature stays off and the rest works.
 
@@ -75,7 +75,9 @@ On Windows, the same is `& ([scriptblock]::Create((irm https://github.com/lesjoi
 
 Downloads are checked against `SHA256SUMS`. Files go to `~/.config/mx-dev-kit`, or `%APPDATA%\mx-dev-kit` on Windows, and every file the installer edits is backed up first. If you would rather not pipe a script into your shell, download `mx-dev-kit.zip` from the [latest release](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest) and run `./install.sh` from it. To add the plugin by hand instead, download [MxDevKit.lplug4](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/MxDevKit.lplug4), open the plugins manager of Options+ (**Haptic feedback**, the settings popover, **Install and uninstall plugins**) and double-click the file while that window is open.
 
-For the vibrations, install the free **Haptic Web Plugin** from the Marketplace in Options+. Codex ignores new hooks until you trust them, so open Codex once and type `/hooks`.
+**Haptic Web Plugin.** With the agent haptics or the terminal integration, the installer also offers to install the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W (MIT license), which their vibrations go through. It downloads `HapticWeb.lplug4` from the latest release of that project, checks that the package is the Haptic Web Plugin, and asks Logi Plugin Service to load it. `--yes` and `--only` install it without asking, `--no-haptic-web` (`-NoHapticWeb` on Windows) skips it without asking. If it is already installed, from the Marketplace or elsewhere, it is left as it is, never replaced. If anything goes wrong (offline, GitHub unavailable, Logi Options+ missing, package refused), the rest of the kit installs anyway and the installer tells you to get it from the Marketplace in Options+ instead. The Windows installer does the same, untested.
+
+Codex ignores new hooks until you trust them, so open Codex once and type `/hooks`.
 
 **Fill the ring.** In Options+, open your device, then **Actions Ring**, and drag actions from **MX Dev Kit** onto a ring. The default ring shows in every app that has no ring of its own. The ring has 8 slots for 16 bubbles. A good start is **Project**, **CI status**, **Pull requests**, **Commit all changes**, **Push**, **Pull**, the bubble of your coding agent (**Claude Code**, **Codex**, **Gemini CLI** or **Copilot CLI**) and **GitHub inbox**.
 
@@ -155,6 +157,7 @@ The plugin is in English and French. With `"language": "auto"` it follows the fi
 - **An agent bubble says Install while the agent is installed.** The plugin does not see your shell's PATH. Set its path in `tools`, e.g. `"tools": { "codex": "/Users/you/.npm-global/bin/codex" }`.
 - **GitHub bubbles show `–`.** The repository has no GitHub `origin` remote, or `gh` is missing or not signed in. Run `gh auth login`.
 - **No vibration.** Only the MX Master 4 vibrates. Check the haptics settings in Options+ and that `haptics.off` does not exist. For the scripts and hooks, `haptic --list` tells you whether the Haptic Web Plugin answers.
+- **`haptic` says the Haptic Web Plugin is unreachable.** Check that it is installed: a `HapticWeb` folder in `~/Library/Application Support/Logi/LogiPluginService/Plugins` (`%LOCALAPPDATA%\Logi\LogiPluginService\Plugins` on Windows). If it is there, restart Logi Plugin Service from the Options+ settings, then try `haptic --list` again. If it is not, run the installer again or install it from the Marketplace in Options+.
 
 The plugin log is `~/Library/Application Support/Logi/LogiPluginService/Logs/plugin_logs/MxDevKit.log` on macOS and `%LOCALAPPDATA%\Logi\LogiPluginService\Logs\plugin_logs\MxDevKit.log` on Windows.
 
@@ -168,7 +171,7 @@ The plugin log is `~/Library/Application Support/Logi/LogiPluginService/Logs/plu
 powershell -ExecutionPolicy Bypass -File "$env:APPDATA\mx-dev-kit\uninstall.ps1"   # -Purge also removes config.json
 ```
 
-It removes the plugin, the shell profile line, the hooks and the scripts, and keeps a backup of every file it edits.
+It removes the plugin, the shell profile line, the hooks and the scripts, and keeps a backup of every file it edits. The Haptic Web Plugin stays, since other tools may use it: uninstall it from Options+ if you do not need it.
 
 ## Build from source
 
@@ -187,6 +190,6 @@ The logic lives in `src/MxDevKit.Core`, with its tests. `src/MxDevKitPlugin` is 
 
 ## Credits and license
 
-Built on the [Logi Actions SDK](https://logitech.github.io/actions-sdk-docs/). Script vibrations go through the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W. The agent marks come from [Simple Icons](https://simpleicons.org) (Claude, GitHub Copilot from GitHub's [Primer octicons](https://primer.style/octicons)) and [Lobe Icons](https://github.com/lobehub/lobe-icons) (Codex, Gemini).
+Built on the [Logi Actions SDK](https://logitech.github.io/actions-sdk-docs/). Script vibrations go through the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W, MIT license. The installers download it from its own releases; it is not part of this repository. The agent marks come from [Simple Icons](https://simpleicons.org) (Claude, GitHub Copilot from GitHub's [Primer octicons](https://primer.style/octicons)) and [Lobe Icons](https://github.com/lobehub/lobe-icons) (Codex, Gemini).
 
 [MIT](LICENSE) © 2026 [Les Joies du Code](https://lesjoiesducode.fr).

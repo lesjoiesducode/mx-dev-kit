@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 (2026-11-10)
+
+- **The installers install the Haptic Web Plugin.** With the agent haptics or the terminal integration, `install.sh` and `install.ps1` offer to install the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W (MIT license), which their vibrations need: one question, Enter meaning yes. `--yes` and `--only` install it without asking, `--no-haptic-web` / `-NoHapticWeb` skip it. The package comes from the latest release of that project and is checked (`name: HapticWeb`) before it goes to the plugins folder of Logi Plugin Service, which is asked to load it. A Haptic Web Plugin already installed, from the Marketplace or elsewhere, is never replaced. Any failure leaves the rest of the installation as it was and falls back to the Marketplace instructions. Windows is untested.
+- The uninstallers leave the Haptic Web Plugin in place, since other tools may use it, and say so.
+
 ## 1.0.0 (2026-11-10)
 
 First public release.

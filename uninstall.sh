@@ -4,6 +4,8 @@
 #
 #   ~/.config/mx-dev-kit/uninstall.sh            plugin, shell integration, hooks, scripts
 #   ~/.config/mx-dev-kit/uninstall.sh --purge    also config.json and the rest of the folder
+#
+# The Haptic Web Plugin stays: other tools may use it. Uninstall it from Logi Options+.
 
 set -eu
 
@@ -13,7 +15,7 @@ purge=0
 for arg in "$@"; do
   case $arg in
     --purge) purge=1 ;;
-    -h | --help) sed -n '2,7s/^# \{0,1\}//p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,9s/^# \{0,1\}//p' "$0"; exit 0 ;;
     *) echo "Unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -38,6 +40,9 @@ if [ -d "$plugins/MxDevKit" ]; then
     open -g "loupedeck://plugin/MxDevKit/reload" 2>/dev/null || true
     echo "Removed $plugins/MxDevKit. If its actions still show in Logi Options+, restart Logi Plugin Service (Options+ settings)."
   fi
+fi
+if [ -d "$plugins/HapticWeb" ]; then
+  echo "The Haptic Web Plugin stays installed: other tools may use it. Uninstall it from Logi Options+ if you do not need it."
 fi
 
 echo "== Shell"
@@ -64,8 +69,8 @@ echo "== Hooks"
 sh "$root/hooks/uninstall.sh" || echo "Remove the agent-haptics entries from ~/.claude/settings.json, ~/.gemini/settings.json and ~/.codex/hooks.json, and delete ~/.copilot/hooks/mx-dev-kit.json, by hand."
 
 echo "== Files"
-rm -rf "$state/bin" "$state/shell" "$state/hooks" "$state/preview" "$state/plugin.new" "$state/plugin.old"
-rm -f "$state/config.example.json" "$state/current-dir" "$state/trigger" "$state/MxDevKit.lplug4" "$state/uninstall.sh"
+rm -rf "$state/bin" "$state/shell" "$state/hooks" "$state/preview" "$state/plugin.new" "$state/plugin.old" "$state/haptic-web.new"
+rm -f "$state/config.example.json" "$state/current-dir" "$state/trigger" "$state/MxDevKit.lplug4" "$state/HapticWeb.lplug4.part" "$state/uninstall.sh"
 if [ "$purge" = 1 ]; then
   rm -f "$state/config.json" "$state/haptics.off" "$state/notifications.off"
   rmdir "$state" 2>/dev/null || echo "Left $state (it still holds files you added)."

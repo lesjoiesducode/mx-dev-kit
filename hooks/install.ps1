@@ -133,5 +133,5 @@ foreach ($t in $targets) {
 }
 
 if (-not $DryRun) {
-    Write-Host "Hook script: $hook (install the Haptic Web Plugin from the Logi Marketplace if not done yet)"
+    Write-Host "Hook script: $hook (its vibrations go through the Haptic Web Plugin)"
 }

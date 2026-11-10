@@ -224,6 +224,14 @@ if [ "$(uname -s)" = Darwin ]; then
   printf 'type: plugin4\nname: MxDevKit\nversion: 9.9.9\n' > "$release/pkg/metadata/LoupedeckPackage.yaml"
   printf 'not a real DLL\n' > "$release/pkg/bin/MxDevKitPlugin.dll"
   (cd "$release/pkg" && zip -qr ../MxDevKit.lplug4 metadata bin)
+  # The Haptic Web Plugin of its own release, and a package that is not it.
+  mkdir -p "$release/hw/metadata" "$release/hw/bin" "$release/other/metadata" "$release/other/bin"
+  printf 'type: plugin4\nname: HapticWeb\ndisplayName: Haptic Web Plugin\nversion: 1.2\n' > "$release/hw/metadata/LoupedeckPackage.yaml"
+  printf 'not a real DLL\n' > "$release/hw/bin/HapticWebPlugin.dll"
+  (cd "$release/hw" && zip -qr ../HapticWeb.lplug4 metadata bin)
+  printf 'type: plugin4\nname: Other\nversion: 1.0\n' > "$release/other/metadata/LoupedeckPackage.yaml"
+  printf 'not a real DLL\n' > "$release/other/bin/Other.dll"
+  (cd "$release/other" && zip -qr ../Other.lplug4 metadata bin)
   git -C "$root" ls-files -z -- install.sh install.ps1 uninstall.sh uninstall.ps1 config.example.json hooks shell bin \
     | (cd "$root" && xargs -0 tar cf -) | (mkdir -p "$release/stage/mx-dev-kit" && cd "$release/stage/mx-dev-kit" && tar xf -)
   # The working tree, not the last commit: the files under test.
@@ -236,8 +244,9 @@ if [ "$(uname -s)" = Darwin ]; then
   cp "$root/install.sh" "$release/install.sh"
   (cd "$release" && shasum -a 256 MxDevKit.lplug4 mx-dev-kit.zip install.sh > SHA256SUMS)
   ustate="$u/.config/mx-dev-kit"
+  hw_url="file://$release/HapticWeb.lplug4"
   as_user() { env -i HOME="$u" PATH="$user_path" SHELL=/bin/zsh MX_TEST_CALLS="$calls" MX_DEV_KIT_INSTALL_WAIT=0 \
-    MX_DEV_KIT_RELEASE_URL="file://$release" "$@"; }
+    MX_DEV_KIT_RELEASE_URL="file://$release" MX_HAPTIC_WEB_URL="${hw_url}" "$@"; }
 
   if as_user sh -c 'command -v dotnet || command -v brew || command -v logiplugintool' >/dev/null; then
     ko "the user PATH of the tests has no .NET, Homebrew or LogiPluginTool"
@@ -254,8 +263,13 @@ if [ "$(uname -s)" = Darwin ]; then
   if grep -qi 'dotnet\|\.NET' "$work/out"; then ko "curl | sh never mentions .NET" "$(cat "$work/out")"; else ok; fi
   if grep -q 'mx-dev-kit >>>' "$u/.zshrc"; then ok; else ko "curl | sh adds the shell integration"; fi
   if [ -x "$ustate/uninstall.sh" ]; then ok; else ko "curl | sh leaves the uninstaller"; fi
+  if [ -f "$uplugins/HapticWeb/bin/HapticWebPlugin.dll" ]; then ok; else ko "curl | sh --yes installs the Haptic Web Plugin" "$(cat "$work/out")"; fi
+  called "curl | sh asks Logi Plugin Service to load the Haptic Web Plugin" "open|-g|loupedeck://plugin/HapticWeb/reload"
 
   expect "the uninstaller left by install.sh" 0 as_user sh "$ustate/uninstall.sh" --purge
+  output_has "uninstall.sh says the Haptic Web Plugin stays" "The Haptic Web Plugin stays installed"
+  if [ -d "$uplugins/HapticWeb" ]; then ok; else ko "uninstall.sh leaves the Haptic Web Plugin"; fi
+  rm -rf "$uplugins/HapticWeb"
   if cmp -s "$u/.zshrc" "$work/zshrc-before"; then ok; else ko "uninstall.sh restores ~/.zshrc as it was" "$(diff "$work/zshrc-before" "$u/.zshrc")"; fi
   if [ -e "$ustate" ]; then ko "uninstall.sh --purge removes the state folder" "$(find "$ustate")"; else ok; fi
   if [ -e "$uplugins/MxDevKit" ]; then ko "uninstall.sh removes the plugin"; else ok; fi
@@ -284,14 +298,56 @@ if [ "$(uname -s)" = Darwin ]; then
   if grep -q 'mx-dev-kit >>>' "$u/.zshrc"; then ok; else ko "--only hooks,shell adds the shell integration"; fi
   if grep -q "agent-haptics.sh' claude Stop" "$u/.claude/settings.json"; then ok; else ko "--only hooks,shell adds the Claude Code hooks" "$(cat "$u/.claude/settings.json")"; fi
   if grep -q '\[Y/n\]' "$work/out"; then ko "--only asks nothing" "$(cat "$work/out")"; else ok; fi
+  if [ -f "$uplugins/HapticWeb/metadata/LoupedeckPackage.yaml" ]; then ok; else ko "--only hooks,shell installs the Haptic Web Plugin" "$(cat "$work/out")"; fi
+  output_has "install.sh says where the Haptic Web Plugin went" "Installed Haptic Web Plugin 1.2 in $uplugins/HapticWeb"
+  output_has "install.sh gives the test once the Haptic Web Plugin is in" "test the vibrations with $ustate/bin/haptic completed"
+  if grep -q 'open the Marketplace' "$work/out"; then ko "no Marketplace step once the Haptic Web Plugin is in" "$(cat "$work/out")"; else ok; fi
+  if [ -e "$ustate/HapticWeb.lplug4.part" ] || [ -e "$ustate/haptic-web.new" ]; then ko "install.sh leaves no Haptic Web download behind"; else ok; fi
   as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
   if grep -q agent-haptics "$u/.claude/settings.json"; then ko "uninstall.sh removes the hooks"; else ok; fi
+
+  # The Haptic Web Plugin: never replaced, refused when it is not the right package, and a failure
+  # never stops the installation.
+  rm -rf "$uplugins/HapticWeb"
+  mkdir -p "$uplugins/HapticWeb/metadata"
+  printf 'name: HapticWeb\nversion: 1.1\n' > "$uplugins/HapticWeb/metadata/LoupedeckPackage.yaml"
+  cp "$uplugins/HapticWeb/metadata/LoupedeckPackage.yaml" "$work/hw-before"
+  expect "install.sh with a Haptic Web Plugin already there" 0 as_user sh "$root/install.sh" --only hooks
+  output_has "install.sh says the Haptic Web Plugin is already there" "Already installed ($uplugins/HapticWeb): left as it is."
+  if cmp -s "$uplugins/HapticWeb/metadata/LoupedeckPackage.yaml" "$work/hw-before" && [ ! -e "$uplugins/HapticWeb/bin" ]; then ok; else
+    ko "install.sh never replaces an installed Haptic Web Plugin" "$(find "$uplugins/HapticWeb")"; fi
+  not_called "nothing to load when the Haptic Web Plugin is already there" "open|-g|loupedeck://plugin/HapticWeb/reload"
+  as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+  rm -rf "$uplugins/HapticWeb"
+
+  expect "install.sh --no-haptic-web" 0 as_user sh "$root/install.sh" --only shell --no-haptic-web
+  if [ -e "$uplugins/HapticWeb" ]; then ko "--no-haptic-web installs no Haptic Web Plugin"; else ok; fi
+  output_has "--no-haptic-web keeps the Marketplace step" "open the Marketplace and install the Haptic Web Plugin"
+  as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+
+  hw_url="file://$release/Other.lplug4"
+  expect "install.sh with a package that is not the Haptic Web Plugin" 0 as_user sh "$root/install.sh" --only shell
+  output_has "install.sh refuses it" "is not the Haptic Web Plugin package (name: Other)"
+  if [ -e "$uplugins/HapticWeb" ] || [ -e "$uplugins/Other" ]; then ko "a wrong package is not installed" "$(ls "$uplugins")"; else ok; fi
+  output_has "a refused package falls back to the Marketplace" "open the Marketplace and install the Haptic Web Plugin"
+  as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+
+  hw_url="file://$release/missing.lplug4"
+  expect "install.sh when the Haptic Web Plugin cannot be downloaded" 0 as_user sh "$root/install.sh" --only hooks,shell
+  output_has "install.sh says the download failed" "Could not download it."
+  output_has "a failed download falls back to the Marketplace" "open the Marketplace and install the Haptic Web Plugin"
+  if [ -x "$ustate/bin/haptic" ] && grep -q 'mx-dev-kit >>>' "$u/.zshrc"; then ok; else ko "a failed download installs the rest" "$(cat "$work/out")"; fi
+  if [ -e "$uplugins/HapticWeb" ] || [ -e "$ustate/HapticWeb.lplug4.part" ]; then ko "a failed download leaves nothing behind"; else ok; fi
+  as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+  hw_url="file://$release/HapticWeb.lplug4"
 
   expect "install.sh --only plugin" 0 as_user sh "$root/install.sh" --only plugin
   if [ -f "$uplugins/MxDevKit/bin/MxDevKitPlugin.dll" ]; then ok; else ko "--only plugin installs the plugin"; fi
   if [ -e "$ustate/bin" ]; then ko "--only plugin installs no scripts" "$(ls "$ustate/bin")"; else ok; fi
   if grep -q 'mx-dev-kit >>>' "$u/.zshrc"; then ko "--only plugin leaves ~/.zshrc alone"; else ok; fi
   if grep -q agent-haptics "$u/.claude/settings.json"; then ko "--only plugin adds no hooks"; else ok; fi
+  if [ -e "$uplugins/HapticWeb" ]; then ko "--only plugin installs no Haptic Web Plugin"; else ok; fi
+  if grep -q 'Haptic Web' "$work/out"; then ko "--only plugin says nothing about the Haptic Web Plugin" "$(cat "$work/out")"; else ok; fi
   if [ -x "$ustate/uninstall.sh" ]; then ok; else ko "--only plugin leaves the uninstaller"; fi
   as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
   if [ -e "$uplugins/MxDevKit" ]; then ko "uninstall.sh removes a plugin installed alone"; else ok; fi
@@ -301,7 +357,7 @@ if [ "$(uname -s)" = Darwin ]; then
   # The questions, one per part, Enter meaning yes.
   if command -v python3 >/dev/null 2>&1; then
     answer() { a=$1; shift; python3 -I "$root/tests/shell/answer.py" "$a" env -i HOME="$u" PATH="$user_path" SHELL=/bin/zsh \
-      MX_TEST_CALLS="$calls" MX_DEV_KIT_INSTALL_WAIT=0 MX_DEV_KIT_RELEASE_URL="file://$release" "$@"; }
+      MX_TEST_CALLS="$calls" MX_DEV_KIT_INSTALL_WAIT=0 MX_DEV_KIT_RELEASE_URL="file://$release" MX_HAPTIC_WEB_URL="$hw_url" "$@"; }
     expect "install.sh asks: no plugin, hooks, no shell" 0 answer "n,,n" sh "$root/install.sh"
     output_has "install.sh asks about the plugin" "Actions Ring bubbles (Options+ plugin)? [Y/n]"
     output_has "install.sh asks about the hooks" "Coding agent haptics (Claude Code, Codex, Gemini, Copilot)? [Y/n]"
@@ -310,6 +366,19 @@ if [ "$(uname -s)" = Darwin ]; then
     if grep -q "agent-haptics.sh' claude Stop" "$u/.claude/settings.json"; then ok; else ko "Enter to the hooks installs them"; fi
     if [ -x "$ustate/bin/haptic" ]; then ok; else ko "the hooks bring the haptic command"; fi
     if grep -q 'mx-dev-kit >>>' "$u/.zshrc"; then ko "n to the shell leaves ~/.zshrc alone"; else ok; fi
+    output_has "install.sh asks about the Haptic Web Plugin, its author and license" \
+      "Haptic Web Plugin by Jasper M-W (MIT license), for these vibrations: install it from github.com/Fallstop/HapticWebPlugin? [Y/n]"
+    if [ -f "$uplugins/HapticWeb/bin/HapticWebPlugin.dll" ]; then ok; else ko "Enter to the Haptic Web Plugin installs it" "$(cat "$work/out")"; fi
+    as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+
+    expect "install.sh asks again with the Haptic Web Plugin there" 0 answer "n,,n,n" sh "$root/install.sh"
+    if grep -q 'Haptic Web Plugin by' "$work/out"; then ko "no question when the Haptic Web Plugin is there" "$(cat "$work/out")"; else ok; fi
+    as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+    rm -rf "$uplugins/HapticWeb"
+
+    expect "install.sh: n to the Haptic Web Plugin" 0 answer "n,,n,n" sh "$root/install.sh"
+    if [ -e "$uplugins/HapticWeb" ]; then ko "n to the Haptic Web Plugin installs nothing"; else ok; fi
+    output_has "n to the Haptic Web Plugin keeps the Marketplace step" "open the Marketplace and install the Haptic Web Plugin"
     as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
 
     expect "install.sh with every answer n" 0 answer "n,n,n" sh "$root/install.sh"
@@ -322,11 +391,13 @@ if [ "$(uname -s)" = Darwin ]; then
     as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
 
     expect "install.sh without a terminal" 0 python3 -I "$root/tests/shell/answer.py" --no-tty env -i HOME="$u" PATH="$user_path" \
-      SHELL=/bin/zsh MX_TEST_CALLS="$calls" MX_DEV_KIT_INSTALL_WAIT=0 MX_DEV_KIT_RELEASE_URL="file://$release" sh "$root/install.sh"
+      SHELL=/bin/zsh MX_TEST_CALLS="$calls" MX_DEV_KIT_INSTALL_WAIT=0 MX_DEV_KIT_RELEASE_URL="file://$release" MX_HAPTIC_WEB_URL="$hw_url" \
+      sh "$root/install.sh"
     output_has "install.sh says it installs everything" "No terminal to ask questions: installing everything"
-    if [ -d "$uplugins/MxDevKit" ] && [ -x "$ustate/bin/haptic" ] && grep -q 'mx-dev-kit >>>' "$u/.zshrc"; then ok; else
+    if [ -d "$uplugins/MxDevKit" ] && [ -x "$ustate/bin/haptic" ] && grep -q 'mx-dev-kit >>>' "$u/.zshrc" && [ -d "$uplugins/HapticWeb" ]; then ok; else
       ko "install.sh without a terminal installs every part" "$(cat "$work/out")"; fi
     as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+    rm -rf "$uplugins/HapticWeb"
   else
     printf 'skip  the installer questions (no python3)\n'
   fi

@@ -7,16 +7,20 @@
 #
 # It asks about each part, Enter meaning yes: the Actions Ring plugin, the coding agent hooks,
 # the terminal integration. The haptic command and the tools of bin/ come with either of the
-# last two. Without a terminal to ask, it installs everything.
+# last two, and so does the offer to install the Haptic Web Plugin, which their vibrations need.
+# Without a terminal to ask, it installs everything.
 #
-#   --only <parts>  install these parts without asking: plugin, hooks, shell, comma-separated
-#                   (--only hooks,shell)
-#   --yes, -y       install everything without asking
-#   --from-source   build the plugin from this clone instead (contributors: .NET 10 SDK, LogiPluginTool)
-#   --link          build and link the plugin from this clone, for development (.NET 10 SDK)
+#   --only <parts>    install these parts without asking: plugin, hooks, shell, comma-separated
+#                     (--only hooks,shell)
+#   --yes, -y         install everything without asking
+#   --no-haptic-web   do not install the Haptic Web Plugin, and do not ask about it
+#   --from-source     build the plugin from this clone instead (contributors: .NET 10 SDK, LogiPluginTool)
+#   --link            build and link the plugin from this clone, for development (.NET 10 SDK)
 #
 # The plugin is MxDevKit.lplug4: the one next to this script (release archive), or the one of the
 # latest release. It goes to the plugins folder of Logi Plugin Service, which then loads it.
+# The Haptic Web Plugin (github.com/Fallstop/HapticWebPlugin, MIT) comes from its latest release,
+# the same way, unless it is already installed: an existing one is never replaced.
 # Every file it changes (~/.zshrc or ~/.bashrc, agent settings.json) is backed up first.
 # ~/.config/mx-dev-kit/uninstall.sh reverses it.
 
@@ -66,7 +70,7 @@ fi
 
 root=$(cd "$(dirname "$0")" && pwd)
 
-plugin=0 shell=0 hooks=0 only="" yes=0 source=0 link=0
+plugin=0 shell=0 hooks=0 only="" yes=0 source=0 link=0 haptic_web=1
 while [ $# -gt 0 ]; do
   case $1 in
     --only) only="$only,${2:?--only needs plugin, hooks or shell}"; shift ;;
@@ -74,7 +78,8 @@ while [ $# -gt 0 ]; do
     --yes | -y) yes=1 ;;
     --from-source) source=1 ;;
     --link) source=1 link=1 ;;
-    -h | --help) sed -n '2,21s/^# \{0,1\}//p' "$0"; exit 0 ;;
+    --no-haptic-web) haptic_web=0 ;;
+    -h | --help) sed -n '2,25s/^# \{0,1\}//p' "$0"; exit 0 ;;
     *) say "Unknown option: $1 (see --help)" >&2; exit 2 ;;
   esac
   shift
@@ -151,6 +156,8 @@ esac
 
 service="$HOME/Library/Application Support/Logi/LogiPluginService"
 plugins="$service/Plugins"
+haptic_web_url=${MX_HAPTIC_WEB_URL:-https://github.com/Fallstop/HapticWebPlugin/releases/latest/download/HapticWeb.lplug4}
+logi_installed() { [ -d /Applications/Utilities/LogiPluginService.app ] || [ -d "$service" ]; }
 
 say "MX Dev Kit ${version:-(latest release)}"
 if [ -z "$only" ] && [ "$asks" = 0 ]; then
@@ -166,6 +173,12 @@ tools=0
 if [ "$plugin" = 0 ] && [ "$tools" = 0 ]; then
   say "Nothing to install."
   exit 0
+fi
+# The vibrations of the hooks, the shell and the scripts go through the Haptic Web Plugin.
+[ "$tools" = 1 ] || haptic_web=0
+if [ "$haptic_web" = 1 ] && [ "$asks" = 1 ] && [ ! -d "$plugins/HapticWeb" ] && logi_installed; then
+  ask_part 'Haptic Web Plugin by Jasper M-W (MIT license), for these vibrations: install it from github.com/Fallstop/HapticWebPlugin?'
+  haptic_web=$part
 fi
 
 migrate_legacy
@@ -243,20 +256,83 @@ install_package() {
   rm -rf "$state/plugin.old"
   say "Installed MX Dev Kit $package_version in $plugins/MxDevKit"
 
+  if load_plugin MxDevKit "$package_version"; then
+    say "Logi Plugin Service loaded it."
+  else
+    say "If \"MX Dev Kit\" does not show in Logi Options+, restart Logi Plugin Service (Options+ settings)."
+  fi
+}
+
+# load_plugin <name> <version>: asks Logi Plugin Service to load the plugin, then waits for its log
+# to say so. Returns 1 when the service refused it, 2 when it said nothing in time.
+load_plugin() {
   started=$(date +%Y-%m-%dT%H-%M-%S)
-  open -g "loupedeck://plugin/MxDevKit/reload" 2>/dev/null || true
-  log="$service/Logs/plugin_logs/MxDevKit.log"
+  open -g "loupedeck://plugin/$1/reload" 2>/dev/null || true
+  log="$service/Logs/plugin_logs/$1.log"
   i=0
   while [ "$i" -lt "${MX_DEV_KIT_INSTALL_WAIT:-20}" ]; do
-    if [ -f "$log" ] && awk -v t="$started" -v want="Plugin 'MxDevKit' version '$package_version' loaded" \
-      '$1 >= t && index($0, want) { found = 1 } END { exit !found }' "$log"; then
-      say "Logi Plugin Service loaded it."
-      return 0
+    if [ -f "$log" ]; then
+      result=$(awk -v t="$started" -v want="Plugin '$1' version '$2' loaded" -v refused="Cannot load plugin from '$plugins/$1'" '
+        $1 < t { next }
+        index($0, want) || index($0, "is already loaded") { r = "loaded" }
+        index($0, refused) && !index($0, "is already loaded") { r = "refused" }
+        END { print r }' "$log")
+      [ "$result" != loaded ] || return 0
+      [ "$result" != refused ] || return 1
     fi
     sleep 1
     i=$((i + 1))
   done
-  say "If \"MX Dev Kit\" does not show in Logi Options+, restart Logi Plugin Service (Options+ settings)."
+  return 2
+}
+
+# The Haptic Web Plugin, from its latest release. Never replaces one that is already there
+# (from the Marketplace or elsewhere). Returns 1, leaving nothing behind, when it is not installed.
+install_haptic_web() {
+  if [ -d "$plugins/HapticWeb" ]; then
+    say "Already installed ($plugins/HapticWeb): left as it is."
+    return 0
+  fi
+  if ! logi_installed; then
+    say "Logi Options+ is not installed: install it (https://www.logitech.com/software/logi-options-plus.html), then run this again."
+    return 1
+  fi
+  hw_file="$state/HapticWeb.lplug4.part"
+  hw_unpack="$state/haptic-web.new"
+  rm -rf "$hw_file" "$hw_unpack"
+  say "Downloading HapticWeb.lplug4 from $haptic_web_url..."
+  if ! curl -fsSL --retry 2 -o "$hw_file" "$haptic_web_url"; then
+    say "Could not download it."
+    rm -f "$hw_file"
+    return 1
+  fi
+  hw_yaml=$(unzip -p "$hw_file" metadata/LoupedeckPackage.yaml 2>/dev/null | tr -d '\r')
+  hw_name=$(printf '%s\n' "$hw_yaml" | sed -n 's/^name: *//p')
+  hw_version=$(printf '%s\n' "$hw_yaml" | sed -n 's/^version: *//p')
+  if [ "$hw_name" != HapticWeb ]; then
+    say "The download is not the Haptic Web Plugin package (name: ${hw_name:-none}): not installed."
+    rm -f "$hw_file"
+    return 1
+  fi
+  mkdir -p "$hw_unpack" "$plugins"
+  if ! unzip -q "$hw_file" -d "$hw_unpack" || [ ! -f "$hw_unpack/metadata/LoupedeckPackage.yaml" ] || [ ! -d "$hw_unpack/bin" ]; then
+    say "The package is incomplete: not installed."
+    rm -rf "$hw_file" "$hw_unpack"
+    return 1
+  fi
+  rm -f "$hw_file"
+  mv "$hw_unpack" "$plugins/HapticWeb" || { rm -rf "$hw_unpack"; return 1; }
+  say "Installed Haptic Web Plugin $hw_version in $plugins/HapticWeb"
+  load_plugin HapticWeb "$hw_version"
+  case $? in
+    0) say "Logi Plugin Service loaded it." ;;
+    1)
+      say "Logi Plugin Service refused to load it: removed."
+      rm -rf "$plugins/HapticWeb"
+      return 1
+      ;;
+    *) say "Logi Plugin Service has not loaded it yet: if haptic completed does not vibrate, restart Logi Plugin Service (Options+ settings)." ;;
+  esac
 }
 
 if [ "$plugin" = 1 ]; then
@@ -308,6 +384,19 @@ if [ "$plugin" = 1 ]; then
   fi
 fi
 
+haptic_web_ready=0
+if [ "$tools" = 1 ]; then
+  step "Haptic Web Plugin"
+  if [ -d "$plugins/HapticWeb" ]; then
+    say "Already installed ($plugins/HapticWeb): left as it is."
+    haptic_web_ready=1
+  elif [ "$haptic_web" = 0 ]; then
+    say "Not installed (your choice)."
+  elif install_haptic_web; then
+    haptic_web_ready=1
+  fi
+fi
+
 step "Notifications"
 if command -v terminal-notifier >/dev/null 2>&1 || [ -x /opt/homebrew/bin/terminal-notifier ] || [ -x /usr/local/bin/terminal-notifier ]; then
   say "terminal-notifier found: a click on a notification opens the page."
@@ -326,8 +415,12 @@ step "Next steps"
 n=0
 if [ "$tools" = 1 ]; then
   n=$((n + 1))
-  say "$n. MX Master 4: in Logi Options+, open the Marketplace and install the Haptic Web Plugin, for the vibrations."
-  say "   Test it: $state/bin/haptic completed"
+  if [ "$haptic_web_ready" = 1 ]; then
+    say "$n. MX Master 4: test the vibrations with $state/bin/haptic completed"
+  else
+    say "$n. MX Master 4: in Logi Options+, open the Marketplace and install the Haptic Web Plugin, for the vibrations."
+    say "   Test it: $state/bin/haptic completed"
+  fi
 fi
 if [ "$plugin" = 1 ]; then
   n=$((n + 1))

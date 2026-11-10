@@ -176,4 +176,4 @@ for agent in $agents; do
   fi
 done
 
-[ "$dry_run" = 1 ] || echo "Hook script: $hook (install the Haptic Web Plugin from the Logi Marketplace if not done yet)"
+[ "$dry_run" = 1 ] || echo "Hook script: $hook (its vibrations go through the Haptic Web Plugin)"

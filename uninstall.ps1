@@ -3,6 +3,7 @@
 #
 #   powershell -ExecutionPolicy Bypass -File "$env:APPDATA\mx-dev-kit\uninstall.ps1" [-Purge]
 #
+# The Haptic Web Plugin stays: other tools may use it. Uninstall it from Logi Options+.
 # Untested on Windows: please test before relying on it, issues and PRs welcome.
 
 param([switch]$Purge)
@@ -37,6 +38,9 @@ if (Test-Path (Join-Path $plugins 'MxDevKit')) {
         }
     }
 }
+if (Test-Path (Join-Path $plugins 'HapticWeb')) {
+    Write-Host 'The Haptic Web Plugin stays installed: other tools may use it. Uninstall it from Logi Options+ if you do not need it.'
+}
 
 Write-Host '== PowerShell'
 if ((Test-Path $PROFILE) -and (Select-String -Path $PROFILE -SimpleMatch '>>> mx-dev-kit >>>' -Quiet)) {
@@ -67,7 +71,7 @@ Write-Host '== Hooks'
 & (Join-Path $root 'hooks\uninstall.ps1')
 
 Write-Host '== Files'
-foreach ($item in 'bin', 'shell', 'hooks', 'preview', 'plugin.new', 'plugin.old', 'config.example.json', 'current-dir', 'trigger', 'MxDevKit.lplug4', 'uninstall.ps1') {
+foreach ($item in 'bin', 'shell', 'hooks', 'preview', 'plugin.new', 'plugin.old', 'config.example.json', 'current-dir', 'trigger', 'MxDevKit.lplug4', 'HapticWeb.lplug4.part', 'haptic-web.new', 'uninstall.ps1') {
     Remove-Item (Join-Path $state $item) -Recurse -Force -ErrorAction SilentlyContinue
 }
 if ($Purge) {

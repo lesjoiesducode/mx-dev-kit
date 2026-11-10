@@ -2,7 +2,7 @@ type: plugin4
 name: MxDevKit
 displayName: MX Dev Kit
 description: Live Git, GitHub and CI bubbles for the Actions Ring that follow the project you are working on, a bubble for each coding agent (Claude Code, Codex, Gemini CLI, Copilot CLI) and a focus timer. Haptic feedback on the MX Master 4.
-version: 1.0.0
+version: 1.1.0
 author: Nicolas Lecointre
 copyright: Copyright (c) 2026 Les Joies du Code
 license: MIT
