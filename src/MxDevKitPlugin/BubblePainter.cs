@@ -55,7 +55,7 @@ public static class BubblePainter
         // Numbers very big, short words a bit less, longer words smaller still.
         var value = bubble.Value;
         var number = char.IsDigit(value[0]);
-        var size = number && value.Length <= 2 ? s * 0.36 : value.Length <= 4 ? s * 0.26 : s * 0.19;
+        var size = number && value.Length <= 2 ? s * 0.36 : value.Length <= 4 ? s * 0.26 : value.Length <= 9 ? s * 0.19 : s * 0.16;
         b.DrawText(value, 0, (int)(h * 0.45), w, (int)(h * 0.42), White, (int)size);
     }
 

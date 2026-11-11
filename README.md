@@ -1,5 +1,7 @@
 # MX Dev Kit
 
+**English** | [Français](README.fr.md)
+
 Developer productivity kit for Logitech MX devices on macOS and Windows. Actions Ring bubbles for your repo (CI, PRs, git) and MX Master 4 vibrations when your coding agent finishes.
 
 **Unofficial, not affiliated with Logitech.**
@@ -15,15 +17,12 @@ A plugin for the Logitech Actions Ring that shows the state of the repository yo
 
 <sub>Drawn by the plugin's own code. In Logi Options+ the ring is smaller and opens around the cursor.</sub>
 
-<!-- Replace with the URL of the article once it is published. -->
-> The story behind it, in French, on [Les Joies du Code](https://lesjoiesducode.fr): *article link coming soon*.
-
 Logitech, Logi, MX Master, Logi Options+ and Actions Ring are trademarks of Logitech. Claude and Claude Code are trademarks of Anthropic, Codex of OpenAI, Gemini of Google, GitHub Copilot of GitHub. Their marks only name the tool each bubble starts.
 
 ## Features
 
 - **Project bubbles** that follow the repository of your last terminal prompt or Finder window: name and branch, open issues, open pull requests, latest GitHub Actions run, known vulnerabilities.
-- **Git from the ring.** Commit all changes, push, pull. Push never forces and pull only fast-forwards. An AI CLI can write the commit message.
+- **Git from the ring.** Commit all changes, push, pull. Push never forces and pull only fast-forwards. An AI CLI can write the commit message. Commit refuses during a merge conflict or when a secret file such as `.env` would go in, and asks for a second click on the main branch.
 - **Coding agents in one click.** Claude Code, Codex, Gemini CLI and Copilot CLI each have a bubble with their mark, which opens a terminal in the repository and starts the agent. **Agent in project** does the same with any command you set.
 - **GitHub inbox** across all your repositories: review requests, mentions, assignments, approvals, merges, changes requested and failed checks on your pull requests. Each one vibrates and shows a notification you can click.
 - **Vulnerabilities for any stack** with osv-scanner, or `npm audit` when osv-scanner is not installed. It never fixes anything.
@@ -65,25 +64,63 @@ curl -fsSL https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download
 irm https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/install.ps1 | iex
 ```
 
-The installer asks about each part, and Enter means yes. The parts are the Actions Ring plugin, the coding agent haptics and the terminal integration. `--only` picks parts without asking, `--yes` installs everything. For the agent vibrations alone:
+1. **Run the installer.** It asks about each part (the Actions Ring plugin, the coding agent haptics, the terminal integration) and Enter means yes.
+2. **Fill the ring.** In Options+, open your device, then **Actions Ring**, and drag actions from **MX Dev Kit** onto a ring. A good start is **Project**, **CI status**, **Pull requests**, **Commit all changes**, **Push**, **Pull**, the bubble of your coding agent and **GitHub inbox**.
+3. **Show the live images.** A new bubble first shows only its name. Click the pencil on its icon, reset the icon with the round arrow above the preview, then **Apply** and **Save**. You do this once per bubble.
+
+Then open a new terminal, `cd` into a repository and run `haptic completed` to check the vibration.
+
+<details>
+<summary>Install only some parts</summary>
+
+`--only` picks parts without asking, `--yes` installs everything. For the agent vibrations alone:
 
 ```sh
 curl -fsSL https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/install.sh | sh -s -- --only hooks
 ```
 
-On Windows, the same is `& ([scriptblock]::Create((irm https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/install.ps1))) -Only hooks`.
+On Windows, the same is `& ([scriptblock]::Create((irm https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/install.ps1))) -Only hooks`. The parts are `plugin`, `hooks` and `shell`.
 
-Downloads are checked against `SHA256SUMS`. Files go to `~/.config/mx-dev-kit`, or `%APPDATA%\mx-dev-kit` on Windows, and every file the installer edits is backed up first. If you would rather not pipe a script into your shell, download `mx-dev-kit.zip` from the [latest release](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest) and run `./install.sh` from it. To add the plugin by hand instead, download [MxDevKit.lplug4](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/MxDevKit.lplug4), open the plugins manager of Options+ (**Haptic feedback**, the settings popover, **Install and uninstall plugins**) and double-click the file while that window is open.
+</details>
 
-**Haptic Web Plugin.** With the agent haptics or the terminal integration, the installer also offers to install the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W (MIT license), which their vibrations go through. It downloads `HapticWeb.lplug4` from the latest release of that project, checks that the package is the Haptic Web Plugin, and asks Logi Plugin Service to load it. `--yes` and `--only` install it without asking, `--no-haptic-web` (`-NoHapticWeb` on Windows) skips it without asking. If it is already installed, from the Marketplace or elsewhere, it is left as it is, never replaced. If anything goes wrong (offline, GitHub unavailable, Logi Options+ missing, package refused), the rest of the kit installs anyway and the installer tells you to get it from the Marketplace in Options+ instead. The Windows installer does the same, untested.
+<details>
+<summary>What the installer does, and how to avoid piping a script</summary>
+
+Downloads are checked against `SHA256SUMS`. Files go to `~/.config/mx-dev-kit`, or `%APPDATA%\mx-dev-kit` on Windows, and every file the installer edits is backed up first.
+
+If you would rather not pipe a script into your shell, download `mx-dev-kit.zip` from the [latest release](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest) and run `./install.sh` from it.
+
+To add the plugin by hand instead, download [MxDevKit.lplug4](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/MxDevKit.lplug4), open the plugins manager of Options+ (**Haptic feedback**, the settings popover, **Install and uninstall plugins**) and double-click the file while that window is open.
+
+</details>
+
+<details>
+<summary>Haptic Web Plugin</summary>
+
+With the agent haptics or the terminal integration, the installer also offers to install the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W (MIT license), which their vibrations go through. It downloads `HapticWeb.lplug4` from the latest release of that project, checks that the package is the Haptic Web Plugin, and asks Logi Plugin Service to load it. `--yes` and `--only` install it without asking, `--no-haptic-web` (`-NoHapticWeb` on Windows) skips it without asking.
+
+If it is already installed, from the Marketplace or elsewhere, it is left as it is, never replaced. If anything goes wrong (offline, GitHub unavailable, Logi Options+ missing, package refused), the rest of the kit installs anyway and the installer tells you to get it from the Marketplace in Options+ instead. The Windows installer does the same, untested.
+
+</details>
+
+<details>
+<summary>Codex hooks and the ring</summary>
 
 Codex ignores new hooks until you trust them, so open Codex once and type `/hooks`.
 
-**Fill the ring.** In Options+, open your device, then **Actions Ring**, and drag actions from **MX Dev Kit** onto a ring. The default ring shows in every app that has no ring of its own. The ring has 8 slots for 16 bubbles. A good start is **Project**, **CI status**, **Pull requests**, **Commit all changes**, **Push**, **Pull**, the bubble of your coding agent (**Claude Code**, **Codex**, **Gemini CLI** or **Copilot CLI**) and **GitHub inbox**.
+The default ring shows in every app that has no ring of its own. The ring has 8 slots for 16 bubbles.
 
-A new bubble first shows only its name. Click the pencil on its icon, reset the icon with the round arrow above the preview, then **Apply** and **Save**. The live image appears. You do this once per bubble.
+</details>
 
-Open a new terminal, `cd` into a repository and run `haptic completed` to check the vibration.
+### Commit safeguards
+
+The **Commit all changes** bubble checks the repository before it runs `git add -A`. When it says no, nothing is staged or written, the bubble shows **Failed** and a notification names the files.
+
+- **Merge conflict.** Unmerged files, a merge, rebase, cherry-pick or revert that is not finished, or conflict markers (`<<<<<<<`, `>>>>>>>`) in new lines: refused.
+- **Secret file.** A file that is not ignored and would be committed: `.env` and `.env.*` (but not `.env.example`, `.env.sample`, `.env.template` or `.env.dist`), `*.pem`, `*.key`, `*.p12`, `*.pfx`, SSH private keys such as `id_rsa`, `credentials.json`, `.netrc` and a few more. Refused, with a hint to add it to `.gitignore`. To commit it anyway, use a terminal.
+- **Main branch.** On `main`, `master` or the default branch of `origin`, the first click turns the bubble into **Confirm?** and shows a notification. A second click within 5 seconds commits. Otherwise the bubble goes back to normal.
+
+The plugin runs `git status` every few seconds without optional locks, so it never holds `.git/index.lock` while you commit or rebase in a terminal.
 
 ## Actions Ring for devs
 
@@ -96,7 +133,7 @@ The bubbles refresh on their own. GitHub is polled every 60 seconds, every 15 wh
 | <img src="docs/img/bubbles/pull-requests.png" width="48" alt=""> | Pull requests | Open pull requests | Opens the list |
 | <img src="docs/img/bubbles/ci-failed.png" width="48" alt=""> | CI status | Latest Actions run of the branch, vibrates when it ends | Opens the run |
 | <img src="docs/img/bubbles/audit.png" width="48" alt=""> | Vulnerabilities | High and critical advisories by default | Scans again |
-| <img src="docs/img/bubbles/commit.png" width="48" alt=""> | Commit all changes | Changed files | `git add -A` and commit |
+| <img src="docs/img/bubbles/commit.png" width="48" alt=""> | Commit all changes | Changed files | `git add -A` and commit, with [safeguards](#commit-safeguards) |
 | <img src="docs/img/bubbles/push.png" width="48" alt=""> | Push | Commits to push | `git push`, publishes a new branch |
 | <img src="docs/img/bubbles/pull.png" width="48" alt=""> | Pull | Commits to pull | `git pull --ff-only` |
 | <img src="docs/img/bubbles/claude.png" width="48" alt=""> | Claude Code | | Starts `claude` in a terminal, in the project |
@@ -152,7 +189,7 @@ The plugin is in English and French. With `"language": "auto"` it follows the fi
 
 ## Troubleshooting
 
-- **A bubble shows its name instead of an image.** Reset its icon once, as described in [Fill the ring](#install).
+- **A bubble shows its name instead of an image.** Reset its icon once, as described in step 3 of [Install](#install).
 - **MX Dev Kit is not listed in Options+.** Open the Options+ settings and click **Restart Logi Plugin Service**.
 - **An agent bubble says Install while the agent is installed.** The plugin does not see your shell's PATH. Set its path in `tools`, e.g. `"tools": { "codex": "/Users/you/.npm-global/bin/codex" }`.
 - **GitHub bubbles show `–`.** The repository has no GitHub `origin` remote, or `gh` is missing or not signed in. Run `gh auth login`.
@@ -160,6 +197,24 @@ The plugin is in English and French. With `"language": "auto"` it follows the fi
 - **`haptic` says the Haptic Web Plugin is unreachable.** Check that it is installed: a `HapticWeb` folder in `~/Library/Application Support/Logi/LogiPluginService/Plugins` (`%LOCALAPPDATA%\Logi\LogiPluginService\Plugins` on Windows). If it is there, restart Logi Plugin Service from the Options+ settings, then try `haptic --list` again. If it is not, run the installer again or install it from the Marketplace in Options+.
 
 The plugin log is `~/Library/Application Support/Logi/LogiPluginService/Logs/plugin_logs/MxDevKit.log` on macOS and `%LOCALAPPDATA%\Logi\LogiPluginService\Logs\plugin_logs\MxDevKit.log` on Windows.
+
+## FAQ
+
+**Which devices work with it?** The bubbles need a Logitech device that opens the Actions Ring in Logi Options+. Logitech offers the Actions Ring on its MX mice and keyboards, such as the MX Master 4 and the MX Keys S, with Logi Options+ 1.83 or later ([Logitech's page](https://www.logitech.com/en-us/software/logi-options-plus/actions-ring.html)). Vibrations need an MX Master 4, the only one with a haptic motor. The kit is tested with an MX Master 4 on macOS.
+
+**GitLab, Bitbucket, GitHub Enterprise?** Not yet. The git bubbles (project, commit, push, pull) work with any remote, but the GitHub bubbles, the inbox and `ci-watch` only know github.com.
+
+**What leaves my machine?** The kit has no server, no account and no telemetry. What goes out is what your own tools send when the kit runs them:
+
+- `gh`, signed in with your account, for the GitHub bubbles and the inbox;
+- `git fetch` to your remote every 3 minutes, for the Pull bubble (`git.fetchMinutes`, 0 to stop it);
+- the vulnerability scan: osv-scanner sends the names and versions of your dependencies to [OSV.dev](https://osv.dev), `npm audit` sends them to the npm registry (`audit.enabled` to turn it off);
+- the staged diff, only if you set `commit.messageCommand`, to the command you chose;
+- the installers download from the releases of this repository and of the Haptic Web Plugin.
+
+Vibrations stay on the computer: the hooks and scripts talk to the Haptic Web Plugin on `127.0.0.1`.
+
+**Why does macOS ask whether Logi Plugin Service may control the Finder?** To follow the project of the front Finder window, the plugin asks the Finder for its folder through AppleScript. Refuse it, or set `"followFinder": false`, and the project follows your terminal only. The same kind of request for Terminal or iTerm comes from the agent bubbles, which open a terminal window and type the agent's command in it.
 
 ## Uninstall
 

@@ -51,7 +51,7 @@ ci-watch() {
     return 1
   fi
 
-  local sha=${1:-$(git rev-parse HEAD 2>/dev/null)} i id failed=0 ids=""
+  local sha=${1:-$(git --no-optional-locks rev-parse HEAD 2>/dev/null)} i id failed=0 ids=""
   if [[ -z $sha ]]; then
     echo "ci-watch: not in a git repository" >&2
     return 1

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MxDevKit;
 
@@ -23,7 +25,7 @@ public sealed class Strings
         AuditName = "Vulnerabilities",
         AuditDescription = "Known vulnerabilities in the dependencies of the current project, at or above the configured severity (high by default). osv-scanner when it is installed (every lockfile: npm, Python, PHP, Go, Rust, .NET...), npm audit otherwise. Click: scans again (never fixes anything).",
         CommitName = "Commit all changes",
-        CommitDescription = "Changed files in the current project. Click: stages everything (git add -A) and commits, with a message describing the changes.",
+        CommitDescription = "Changed files in the current project. Click: stages everything (git add -A) and commits, with a message describing the changes. Refuses during a merge conflict or when a secret file such as .env would be committed. On the main branch, click twice to confirm.",
         PushName = "Push",
         PushDescription = "Commits waiting to be pushed. Click: git push (never forced).",
         PullName = "Pull",
@@ -84,6 +86,18 @@ public sealed class Strings
 
         NotificationTest = "Notifications work. A click opens your GitHub notifications.",
         NoProject = "No current project yet. Open a terminal in a repository, or a Finder window on macOS, then click again.",
+
+        Confirm = "Confirm?",
+        CommitRefused = "Commit refused",
+        CommitUnmerged = "Merge conflict in {0}. Resolve it, then click again.",
+        CommitOperation = "A {0} is in progress. Finish it or abort it in a terminal.",
+        CommitMarkers = "Conflict markers (<<<<<<<) left in {0}. Resolve them, then click again.",
+        CommitSensitiveOne = "{0} would be committed. Add it to .gitignore, or commit from a terminal if it is meant to be shared.",
+        CommitSensitiveMany = "{0} would be committed. Add them to .gitignore, or commit from a terminal if they are meant to be shared.",
+        CommitConfirmTitle = "Commit on {0}?",
+        CommitConfirmText = "Click Commit again within 5 seconds to commit on {0}.",
+        AndMore = "{0} and {1} more",
+        And = "and",
     };
 
     public static readonly Strings French = new()
@@ -104,7 +118,7 @@ public sealed class Strings
         AuditName = "Failles du projet",
         AuditDescription = "Failles connues des dépendances du projet courant, à partir de la gravité choisie (high par défaut). osv-scanner s'il est installé (tous les fichiers de verrouillage : npm, Python, PHP, Go, Rust, .NET...), npm audit sinon. Clic : relance l'analyse (ne corrige jamais rien).",
         CommitName = "Commit du projet",
-        CommitDescription = "Fichiers modifiés du projet courant. Clic : git add -A puis commit, avec un message qui décrit les modifications.",
+        CommitDescription = "Fichiers modifiés du projet courant. Clic : git add -A puis commit, avec un message qui décrit les modifications. Refuse pendant un conflit de merge ou si un fichier secret comme .env partirait dans le commit. Sur la branche principale, deux clics pour confirmer.",
         PushName = "Push du projet",
         PushDescription = "Commits à pousser. Clic : git push (jamais forcé).",
         PullName = "Pull du projet",
@@ -165,6 +179,18 @@ public sealed class Strings
 
         NotificationTest = "Les notifications fonctionnent. Un clic ouvre vos notifications GitHub.",
         NoProject = "Pas encore de projet courant. Ouvrez un terminal dans un dépôt, ou une fenêtre du Finder sur macOS, puis cliquez à nouveau.",
+
+        Confirm = "Confirmer\u00A0?",
+        CommitRefused = "Commit refusé",
+        CommitUnmerged = "Conflit de merge dans {0}. Résolvez-le, puis cliquez à nouveau.",
+        CommitOperation = "Un {0} est en cours. Terminez-le ou annulez-le dans un terminal.",
+        CommitMarkers = "Marqueurs de conflit (<<<<<<<) restés dans {0}. Résolvez-les, puis cliquez à nouveau.",
+        CommitSensitiveOne = "{0} partirait dans le commit. Ajoutez-le au .gitignore, ou committez depuis un terminal s'il doit vraiment être partagé.",
+        CommitSensitiveMany = "{0} partiraient dans le commit. Ajoutez-les au .gitignore, ou committez depuis un terminal s'ils doivent vraiment être partagés.",
+        CommitConfirmTitle = "Commit sur {0} ?",
+        CommitConfirmText = "Cliquez à nouveau sur Commit dans les 5 secondes pour committer sur {0}.",
+        AndMore = "{0} et {1} autres",
+        And = "et",
     };
 
     public string Code { get; private init; } = "en";
@@ -238,6 +264,17 @@ public sealed class Strings
     public string InboxMore { get; private init; } = "";
     public string NotificationTest { get; private init; } = "";
     public string NoProject { get; private init; } = "";
+    public string Confirm { get; private init; } = "";
+    public string CommitRefused { get; private init; } = "";
+    public string CommitUnmerged { get; private init; } = "";
+    public string CommitOperation { get; private init; } = "";
+    public string CommitMarkers { get; private init; } = "";
+    public string CommitSensitiveOne { get; private init; } = "";
+    public string CommitSensitiveMany { get; private init; } = "";
+    public string CommitConfirmTitle { get; private init; } = "";
+    public string CommitConfirmText { get; private init; } = "";
+    public string AndMore { get; private init; } = "";
+    public string And { get; private init; } = "";
 
     // "auto" follows the system language detected by the caller.
     public static Strings For(string? configured, string? systemLanguage)
@@ -272,4 +309,29 @@ public sealed class Strings
         (e.Number is { } n ? $"{e.Repo}#{n}" : e.Repo) + (e.Title.Length > 0 ? " " + e.Title : "");
 
     public string InboxMoreText(int count) => string.Format(this.InboxMore, count);
+
+    // "a, b and c", "a, b, c and 2 more".
+    public string FileList(IReadOnlyList<string> files, int max = 3)
+    {
+        if (files.Count <= max)
+        {
+            return files.Count <= 1 ? string.Join("", files) : string.Join(", ", files.Take(files.Count - 1)) + " " + this.And + " " + files[^1];
+        }
+
+        return string.Format(this.AndMore, string.Join(", ", files.Take(max)), files.Count - max);
+    }
+
+    // Notification text of a refused commit.
+    public string CommitRefusal(CommitCheck check)
+    {
+        var files = this.FileList(check.Files);
+        return check.Block switch
+        {
+            CommitBlock.Unmerged => string.Format(this.CommitUnmerged, files),
+            CommitBlock.Operation => string.Format(this.CommitOperation, check.Operation ?? "merge"),
+            CommitBlock.Markers => string.Format(this.CommitMarkers, files),
+            CommitBlock.Sensitive => string.Format(check.Files.Count == 1 ? this.CommitSensitiveOne : this.CommitSensitiveMany, files),
+            _ => "",
+        };
+    }
 }

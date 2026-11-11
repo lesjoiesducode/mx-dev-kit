@@ -61,7 +61,7 @@ notify() {
 # Compose labels its containers with that folder (com.docker.compose.project.working_dir).
 dirs=
 if [ "$all" = 0 ] && [ -z "$project" ]; then
-  top=$(git rev-parse --show-toplevel 2>/dev/null || echo /)
+  top=$(git --no-optional-locks rev-parse --show-toplevel 2>/dev/null || echo /)
   d=$(pwd)
   while :; do
     for f in compose.yaml compose.yml docker-compose.yaml docker-compose.yml; do

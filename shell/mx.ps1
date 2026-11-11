@@ -44,7 +44,7 @@ function global:buzz {
 
 function global:ci-watch([string]$Sha) {
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { Write-Error 'ci-watch: the GitHub CLI (gh) is not installed'; return }
-    if (-not $Sha) { $Sha = git rev-parse HEAD 2>$null }
+    if (-not $Sha) { $Sha = git --no-optional-locks rev-parse HEAD 2>$null }
     if (-not $Sha) { Write-Error 'ci-watch: not in a git repository'; return }
 
     Write-Host "Waiting for the workflow runs of $($Sha.Substring(0, 7))..."

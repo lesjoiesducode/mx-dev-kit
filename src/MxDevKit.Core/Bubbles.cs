@@ -79,6 +79,9 @@ public enum ActionPhase
     Running,
     Succeeded,
     Failed,
+
+    // Commit on the default branch: waiting for the second click.
+    Confirming,
 }
 
 public sealed record ActionStatus(ActionPhase Phase, DateTime At)
@@ -88,8 +91,13 @@ public sealed record ActionStatus(ActionPhase Phase, DateTime At)
     public static readonly TimeSpan ResultVisibleFor = TimeSpan.FromSeconds(8);
 
     // A result (OK, Failed) stays on the bubble a few seconds, then the counter comes back.
-    public ActionPhase Visible(DateTime now) =>
-        this.Phase == ActionPhase.Running || now - this.At < ResultVisibleFor ? this.Phase : ActionPhase.Idle;
+    // A confirmation request lasts as long as the second click can come.
+    public ActionPhase Visible(DateTime now) => this.Phase switch
+    {
+        ActionPhase.Running => ActionPhase.Running,
+        ActionPhase.Confirming => now - this.At < CommitGuard.ConfirmWindow ? ActionPhase.Confirming : ActionPhase.Idle,
+        _ => now - this.At < ResultVisibleFor ? this.Phase : ActionPhase.Idle,
+    };
 }
 
 // Snapshot of everything the project bubbles show. Null numbers mean "not known yet".
@@ -285,6 +293,8 @@ public static class Bubbles
                 return new Bubble(Glyph.Check, s.Ok, Palette.Green, s.Label(name, s.Ok));
             case ActionPhase.Failed:
                 return new Bubble(Glyph.Cross, s.Failed, Palette.Red, s.Label(name, s.Failed));
+            case ActionPhase.Confirming:
+                return new Bubble(glyph, s.Confirm, Palette.Orange, s.Label(name, s.Confirm));
         }
 
         if (count == null)

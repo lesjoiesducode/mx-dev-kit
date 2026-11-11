@@ -108,7 +108,7 @@ trap 'rm -rf "$stage"' EXIT
 kit="$stage/mx-dev-kit"
 mkdir -p "$kit"
 # Tracked files only: no backups, no build output.
-git ls-files -z -- install.sh install.ps1 uninstall.sh uninstall.ps1 config.example.json LICENSE README.md CHANGELOG.md hooks shell bin \
+git ls-files -z -- install.sh install.ps1 uninstall.sh uninstall.ps1 config.example.json LICENSE README.md README.fr.md CHANGELOG.md hooks shell bin \
   | COPYFILE_DISABLE=1 xargs -0 tar cf - | (cd "$kit" && tar xf -)
 [ -f "$kit/install.sh" ] && [ -f "$kit/hooks/install.sh" ] || fail "git ls-files found no scripts (not a git checkout?)"
 for f in install.sh uninstall.sh bin/haptic bin/mx-notify bin/uptime-watch bin/docker-watch hooks/install.sh hooks/uninstall.sh hooks/agent-haptics.sh; do

@@ -54,6 +54,8 @@ internal static class Samples
         yield return ("audit-clean", Bubbles.Audit(Web, En));
         yield return ("commit", Bubbles.Commit(Api, En, Now));
         yield return ("commit-running", Bubbles.Commit(With(Api, GitActions.Commit, ActionPhase.Running), En, Now));
+        yield return ("commit-confirm", Bubbles.Commit(With(Api, GitActions.Commit, ActionPhase.Confirming), En, Now));
+        yield return ("commit-confirm-fr", Bubbles.Commit(With(Api, GitActions.Commit, ActionPhase.Confirming), Strings.French, Now));
         yield return ("push", Bubbles.Push(Api, En, Now));
         yield return ("push-done", Bubbles.Push(With(Api, GitActions.Push, ActionPhase.Succeeded), En, Now));
         yield return ("pull", Bubbles.Pull(Web, En, Now));

@@ -11,12 +11,19 @@ internal sealed class ProjectWatcher : IDisposable
     // A lockfile that changed (npm install, poetry lock...) gets a new scan once it has settled.
     private static readonly TimeSpan AuditAfterLockfileChange = TimeSpan.FromSeconds(5);
 
+    // The plugin runs git every few seconds while you work: without optional locks, `git status` never
+    // takes .git/index.lock, so it cannot get in the way of a commit or a rebase in your terminal.
+    private static readonly IReadOnlyDictionary<string, string> GitEnvironment = new Dictionary<string, string> { ["GIT_OPTIONAL_LOCKS"] = "0" };
+
     private readonly object _sync = new();
     private readonly FinderFolder _finder = new();
     private Timer? _timer;
     private int _ticking;
     private int _actionBusy;
     private ProjectView _view = ProjectView.Empty;
+
+    // Commit on the default branch: the first click arms, a second one within the window commits.
+    private (string Root, string? Branch, DateTime At)? _commitArmed;
 
     private string? _lastDir;
     private string? _chosenDir;
@@ -561,6 +568,12 @@ internal sealed class ProjectWatcher : IDisposable
 
         ProcessRunner.Detach(() =>
         {
+            if (action == GitActions.Commit && !this.CommitAllowed(root))
+            {
+                Interlocked.Exchange(ref _actionBusy, 0);
+                return;
+            }
+
             var ok = false;
             try
             {
@@ -594,6 +607,107 @@ internal sealed class ProjectWatcher : IDisposable
             var actions = new Dictionary<string, ActionStatus>(v.Actions) { [action] = new ActionStatus(phase, DateTime.UtcNow) };
             return v with { Actions = actions };
         });
+
+    // Before `git add -A`: no commit during a conflict or with a secret file, a second click on the
+    // default branch. Nothing is staged or written when it says no.
+    private bool CommitAllowed(string root)
+    {
+        var check = this.CheckCommit(root);
+        var s = DevKit.Strings;
+        if (check == null)
+        {
+            return true; // git did not answer: the commit itself will fail and say so
+        }
+
+        if (!check.Ok)
+        {
+            _commitArmed = null;
+            PluginLog.Info($"Commit refused in {root}: {check.Block} {string.Join(", ", check.Files)}");
+            this.SetAction(GitActions.Commit, ActionPhase.Failed);
+            _redrawAt = DateTime.UtcNow + ActionStatus.ResultVisibleFor + TimeSpan.FromSeconds(0.5);
+            Notifier.Show(s.CommitRefused, s.CommitRefusal(check));
+            DevKit.Haptics.Raise(HapticEvents.ActionFailed);
+            return false;
+        }
+
+        var branch = this.CurrentBranch(root);
+        var defaultBranch = CommitGuard.DefaultBranch(Git(root, 5, "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"));
+        if (!CommitGuard.NeedsConfirmation(branch, defaultBranch))
+        {
+            return true;
+        }
+
+        var now = DateTime.UtcNow;
+        if (_commitArmed is { } armed && armed.Root == root && armed.Branch == branch && now - armed.At < CommitGuard.ConfirmWindow)
+        {
+            _commitArmed = null;
+            return true;
+        }
+
+        _commitArmed = (root, branch, now);
+        PluginLog.Info($"Commit on {branch} in {root}: waiting for a second click");
+        this.SetAction(GitActions.Commit, ActionPhase.Confirming);
+        _redrawAt = now + CommitGuard.ConfirmWindow + TimeSpan.FromSeconds(0.2);
+        Notifier.Show(string.Format(s.CommitConfirmTitle, branch), string.Format(s.CommitConfirmText, branch));
+        return false;
+    }
+
+    // Null when git cannot tell (the commit then runs as before and fails on its own).
+    private CommitCheck? CheckCommit(string root)
+    {
+        var porcelain = Git(root, 10, "-c", "core.quotePath=false", "status", "--porcelain=v1", "-z", "--untracked-files=all");
+        if (porcelain == null)
+        {
+            return null;
+        }
+
+        var status = CommitGuard.ParseStatus(porcelain);
+        string? operation = null;
+        var gitDir = Git(root, 5, "rev-parse", "--absolute-git-dir")?.Trim();
+        if (!string.IsNullOrEmpty(gitDir))
+        {
+            operation = CommitGuard.OperationFiles
+                .Where(o => File.Exists(Path.Combine(gitDir, o.Path)) || Directory.Exists(Path.Combine(gitDir, o.Path)))
+                .Select(o => o.Operation)
+                .FirstOrDefault();
+        }
+
+        if (status.Any(e => e.Unmerged) || operation != null)
+        {
+            return CommitGuard.Check(status, operation, Array.Empty<string>());
+        }
+
+        // Markers added since HEAD in tracked files, anywhere in the new ones. No HEAD yet: every file is new.
+        var hasHead = Git(root, 5, "rev-parse", "--verify", "--quiet", "HEAD") != null;
+        var markers = new List<string>();
+        if (hasHead)
+        {
+            markers.AddRange(CommitGuard.MarkersInDiff(Git(root, 20, "-c", "core.quotePath=false", "diff", "HEAD", "--no-color", "--no-ext-diff", "--no-textconv", "-U0")));
+        }
+
+        foreach (var e in status.Where(e => !e.Deleted && (e.Untracked || !hasHead)).Take(2000))
+        {
+            if (!markers.Contains(e.Path) && FileHasMarkers(Path.Combine(root, e.Path)))
+            {
+                markers.Add(e.Path);
+            }
+        }
+
+        return CommitGuard.Check(status, null, markers);
+    }
+
+    private static bool FileHasMarkers(string path)
+    {
+        try
+        {
+            var info = new FileInfo(path);
+            return info.Exists && info.Length <= 2_000_000 && CommitGuard.HasMarkers(File.ReadAllText(path));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
 
     private bool Commit(string root)
     {
@@ -739,10 +853,11 @@ internal sealed class ProjectWatcher : IDisposable
             return null;
         }
 
-        var result = ProcessRunner.Run(git, cwd, TimeSpan.FromSeconds(timeoutSeconds), args);
-        if (result is { Ok: false } && args[0] is not ("rev-list" or "rev-parse" or "remote"))
+        var result = ProcessRunner.Run(git, cwd, TimeSpan.FromSeconds(timeoutSeconds), args, env: GitEnvironment);
+        var command = args[0] == "-c" && args.Length > 2 ? args[2] : args[0];
+        if (result is { Ok: false } && command is not ("rev-list" or "rev-parse" or "remote" or "symbolic-ref"))
         {
-            PluginLog.Info($"git {args[0]} in {cwd}: exit {result.ExitCode} {FirstLine(result.Stderr)}");
+            PluginLog.Info($"git {command} in {cwd}: exit {result.ExitCode} {FirstLine(result.Stderr)}");
         }
 
         return result?.Ok == true ? result.Stdout : null;

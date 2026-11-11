@@ -11,7 +11,7 @@ internal sealed record ProcessResult(int ExitCode, string Stdout, string Stderr)
 // Runs a tool without a shell. Null when it cannot start or runs past its timeout.
 internal static class ProcessRunner
 {
-    public static ProcessResult? Run(string exe, string? cwd, TimeSpan timeout, IEnumerable<string> args, string? stdin = null)
+    public static ProcessResult? Run(string exe, string? cwd, TimeSpan timeout, IEnumerable<string> args, string? stdin = null, IReadOnlyDictionary<string, string>? env = null)
     {
         var argList = args.ToList();
         try
@@ -33,6 +33,10 @@ internal static class ProcessRunner
             }
 
             ToolLocator.PrepareEnvironment(psi.Environment);
+            foreach (var (key, value) in env ?? new Dictionary<string, string>())
+            {
+                psi.Environment[key] = value;
+            }
 
             using var p = Process.Start(psi);
             if (p == null)

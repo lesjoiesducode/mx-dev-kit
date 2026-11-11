@@ -35,7 +35,7 @@ function Get-Norm([string]$Path) { if ($Path) { $Path.ToLowerInvariant().Replace
 # The compose project of this folder: the first folder with a compose file, up to the git root.
 $dirs = @()
 if (-not $All -and -not $Project) {
-    $top = git rev-parse --show-toplevel 2>$null
+    $top = git --no-optional-locks rev-parse --show-toplevel 2>$null
     $top = if ($top) { Get-Norm $top } else { '' }
     $d = (Get-Location).ProviderPath
     while ($d) {

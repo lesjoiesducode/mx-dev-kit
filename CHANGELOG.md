@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 (2026-11-11)
+
+- **Commit safeguards.** The Commit bubble refuses, without touching the repository, during an unfinished merge, rebase, cherry-pick or revert, when new lines hold conflict markers, or when a secret file that is not ignored would be committed (`.env`, `*.pem`, `*.key`, SSH private keys...). A notification names the files. On `main`, `master` or the default branch, it asks for a second click within 5 seconds.
+- The background git calls no longer take optional locks (`GIT_OPTIONAL_LOCKS=0`), so they never hold `index.lock` during a commit or a rebase in your terminal.
+- README in French, `README.fr.md`.
+
 ## 1.1.1 (2026-11-10)
 
 - New plugin icon in Logi Options+: `</>` on a dark background, easier to read at small sizes. Its source is `tools/icon/icon.svg`.
