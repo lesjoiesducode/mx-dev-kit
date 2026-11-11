@@ -22,6 +22,9 @@ public static class DevKitPaths
 
     public static string CurrentDirFile => Path.Combine(StateDir, "current-dir");
 
+    // The terminal of the last prompt, written next to current-dir (see Terminals).
+    public static string CurrentTerminalFile => Path.Combine(StateDir, "current-terminal");
+
     // Present: no vibration at all, from the plugin, the hooks or the shell scripts.
     public static string MuteFile => Path.Combine(StateDir, "haptics.off");
 

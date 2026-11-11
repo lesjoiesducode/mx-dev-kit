@@ -49,7 +49,7 @@ public class BubblesTests
     [InlineData(CiState.None, Glyph.Check, Bubbles.None)]
     public void Ci_bubble_follows_the_run(CiState state, Glyph glyph, string value)
     {
-        var bubble = Bubbles.Ci(Repo with { Ci = new CiRun(state, 1, null) }, En);
+        var bubble = Bubbles.Ci(Repo with { Ci = new CiRun(state, "c1", null) }, En);
 
         Assert.Equal(glyph, bubble.Glyph);
         Assert.Equal(value, bubble.Value);
@@ -57,7 +57,7 @@ public class BubblesTests
 
     [Fact]
     public void Labels_are_localised() =>
-        Assert.Equal("CI : Échec", Bubbles.Ci(Repo with { Ci = new CiRun(CiState.Failed, 1, null) }, Fr).Label);
+        Assert.Equal("CI : Échec", Bubbles.Ci(Repo with { Ci = new CiRun(CiState.Failed, "c1", null) }, Fr).Label);
 
     [Fact]
     public void Audit_bubble_states()

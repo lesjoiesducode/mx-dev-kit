@@ -21,7 +21,10 @@
 # latest release. It goes to the plugins folder of Logi Plugin Service, which then loads it.
 # The Haptic Web Plugin (github.com/Fallstop/HapticWebPlugin, MIT) comes from its latest release,
 # the same way, unless it is already installed: an existing one is never replaced.
-# Every file it changes (~/.zshrc or ~/.bashrc, agent settings.json) is backed up first.
+# The terminal integration goes where your shell reads it: ${ZDOTDIR:-~}/.zshrc for zsh, ~/.bash_profile
+# (or the ~/.bash_login or ~/.profile you already have) for bash, a file of its own in
+# ~/.config/fish/conf.d for fish. Any other shell: it says so and adds nothing.
+# Every file it changes (that profile, agent settings.json) is backed up first.
 # ~/.config/mx-dev-kit/uninstall.sh reverses it.
 
 set -eu
@@ -79,7 +82,7 @@ while [ $# -gt 0 ]; do
     --from-source) source=1 ;;
     --link) source=1 link=1 ;;
     --no-haptic-web) haptic_web=0 ;;
-    -h | --help) sed -n '2,25s/^# \{0,1\}//p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,28s/^# \{0,1\}//p' "$0"; exit 0 ;;
     *) say "Unknown option: $1 (see --help)" >&2; exit 2 ;;
   esac
   shift
@@ -149,9 +152,35 @@ migrate_legacy() {
   say "Replaced Ring Dev Kit, the former name of this kit (your settings moved to $state)."
 }
 
-case "$(basename "${SHELL:-/bin/zsh}")" in
-  bash) rc="$HOME/.bash_profile"; [ -e "$rc" ] || rc="$HOME/.bashrc"; shell_file=mx.bash ;;
-  *) rc="$HOME/.zshrc"; shell_file=mx.zsh ;;
+# The shell your terminal opens: $SHELL, else the one of your account.
+login_shell=${SHELL:-}
+[ -n "$login_shell" ] || login_shell=$(dscl . -read "/Users/$(id -un)" UserShell 2>/dev/null | awk '{ print $2 }')
+shell_name=$(basename "${login_shell:-/bin/zsh}")
+fish_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fish/conf.d"
+
+# zsh reads ${ZDOTDIR:-$HOME}/.zshrc. ZDOTDIR is often set in ~/.zshenv without export: ask zsh.
+zsh_rc() {
+  zdot=${ZDOTDIR:-}
+  if [ -z "$zdot" ] && command -v zsh >/dev/null 2>&1; then
+    zdot=$(zsh -c 'printf "%s\n" "${ZDOTDIR:-}"' </dev/null 2>/dev/null | tail -n 1)
+  fi
+  [ -n "$zdot" ] && [ -d "$zdot" ] || zdot=$HOME
+  printf '%s/.zshrc' "$zdot"
+}
+
+# The login bash of macOS reads the first of these that exists, and never ~/.bashrc on its own.
+bash_rc() {
+  for f in "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile"; do
+    [ -e "$f" ] && { printf '%s' "$f"; return; }
+  done
+  printf '%s' "$HOME/.bash_profile"
+}
+
+rc="" shell_file=""
+case $shell_name in
+  zsh) rc=$(zsh_rc); shell_file=mx.zsh ;;
+  bash) rc=$(bash_rc); shell_file=mx.bash ;;
+  fish) rc="$fish_dir/mx-dev-kit.fish"; shell_file=mx.fish ;;
 esac
 
 service="$HOME/Library/Application Support/Logi/LogiPluginService"
@@ -188,7 +217,7 @@ say "In $state"
 mkdir -p "$state/hooks"
 if [ "$tools" = 1 ]; then
   mkdir -p "$state/bin" "$state/shell"
-  cp "$root"/shell/mx.zsh "$root"/shell/mx.bash "$root"/shell/mx.ps1 "$state/shell/"
+  cp "$root"/shell/mx.zsh "$root"/shell/mx.bash "$root"/shell/mx.fish "$root"/shell/mx.ps1 "$state/shell/"
   cp "$root"/bin/haptic "$root"/bin/mx-notify "$root"/bin/uptime-watch "$root"/bin/docker-watch "$root"/bin/*.ps1 "$state/bin/"
   chmod +x "$state/bin/haptic" "$state/bin/mx-notify" "$state/bin/uptime-watch" "$state/bin/docker-watch"
   say "haptic, mx-notify, uptime-watch and docker-watch in $state/bin"
@@ -207,13 +236,37 @@ fi
 
 if [ "$shell" = 1 ]; then
   step "Shell"
-  if [ -e "$rc" ] && grep -qF "$marker" "$rc"; then
+  line_for() { printf '[ -f "%s" ] && . "%s"' "$state/shell/$1" "$state/shell/$1"; }
+  if [ -z "$shell_file" ]; then
+    # Never "Added" for a shell that would not load it.
+    say "Your shell is $shell_name: MX Dev Kit has no integration for it, nothing was added."
+    say "The rest of the kit works without it. If you also use zsh, bash or fish, add this line to its startup file:"
+    say "  zsh (~/.zshrc):          $(line_for mx.zsh)"
+    say "  bash (~/.bash_profile):  $(line_for mx.bash)"
+    say "  fish (~/.config/fish/conf.d/mx-dev-kit.fish):  source \"$state/shell/mx.fish\""
+  elif [ "$shell_file" = mx.fish ]; then
+    # A file of its own in conf.d, which fish loads at startup: nothing of yours is edited.
+    fish_file=$(printf '%s\n# Written by the MX Dev Kit installer, deleted by its uninstaller.\ntest -f "%s"; and source "%s"\n%s' \
+      "$marker" "$state/shell/mx.fish" "$state/shell/mx.fish" "# <<< mx-dev-kit <<<")
+    if [ -f "$rc" ] && [ "$(cat "$rc")" = "$fish_file" ]; then
+      say "Already in $rc"
+    else
+      mkdir -p "$fish_dir"
+      printf '%s\n' "$fish_file" > "$rc"
+      say "Added $rc (open a new terminal to use it)"
+    fi
+  elif [ -e "$rc" ] && grep -qF "$marker" "$rc"; then
     say "Already in $rc"
   else
     backup "$rc"
     {
       printf '\n%s\n' "$marker"
-      printf '[ -f "%s" ] && . "%s"\n' "$state/shell/$shell_file" "$state/shell/$shell_file"
+      if [ "$shell_file" = mx.bash ]; then
+        # ~/.profile is also read by other shells: only bash loads it.
+        printf '[ -n "${BASH_VERSION:-}" ] && %s\n' "$(line_for mx.bash)"
+      else
+        printf '%s\n' "$(line_for "$shell_file")"
+      fi
       printf '%s\n' "# <<< mx-dev-kit <<<"
     } >> "$rc"
     say "Added to $rc (open a new terminal to use it)"

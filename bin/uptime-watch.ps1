@@ -21,9 +21,26 @@ if ($PSVersionTable.PSVersion.Major -lt 6) {
 $state = if ($env:APPDATA) { Join-Path $env:APPDATA 'mx-dev-kit' } else { Join-Path $HOME '.config/mx-dev-kit' }
 $url = if ($env:MX_HAPTIC_URL) { $env:MX_HAPTIC_URL.TrimEnd('/') } else { 'https://local.jmw.nz:41443/haptic' }
 
+# Without waiting, and without DNS: curl.exe (built into Windows 10 and 11) resolves local.jmw.nz,
+# the public name of 127.0.0.1, locally.
 function Send-Haptic([string]$Waveform) {
     if (Test-Path (Join-Path $state 'haptics.off')) { return }
-    try { Invoke-RestMethod -Method Post -Uri "$url/$Waveform" -Body '' -ContentType 'text/plain' -TimeoutSec 2 | Out-Null } catch { }
+    $curl = if ($env:SystemRoot -and (Test-Path (Join-Path $env:SystemRoot 'System32\curl.exe'))) { Join-Path $env:SystemRoot 'System32\curl.exe' } else { 'curl' }
+    try {
+        $psi = New-Object Diagnostics.ProcessStartInfo $curl
+        $sink = if ($env:OS -eq 'Windows_NT') { 'NUL' } else { '/dev/null' }
+        $psi.Arguments = "-s -m 2 -o $sink -X POST -d `"`" --resolve local.jmw.nz:41443:127.0.0.1 `"$url/$Waveform`""
+        if ($env:OS -eq 'Windows_NT') {
+            # Through ShellExecute, curl.exe inherits none of our handles (nothing waits for it) and shows no window.
+            $psi.UseShellExecute = $true
+            $psi.WindowStyle = 'Hidden'
+        } else {
+            $psi.UseShellExecute = $false
+            $psi.RedirectStandardOutput = $true
+            $psi.RedirectStandardError = $true
+        }
+        ([Diagnostics.Process]::Start($psi)).Dispose()
+    } catch { }
 }
 
 # Returns @(up, reason).

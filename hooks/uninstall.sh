@@ -21,7 +21,7 @@ backup_name() {
   printf '%s' "$b"
 }
 
-for settings in "$claude_dir/settings.json" "$HOME/.gemini/settings.json" "$codex_dir/hooks.json"; do
+for settings in "$claude_dir/settings.json" "${GEMINI_CLI_HOME:-$HOME}/.gemini/settings.json" "$codex_dir/hooks.json"; do
   [ -s "$settings" ] || continue
   grep -q agent-haptics "$settings" || continue
   if ! json_check "$settings" || ! result=$(json_strip "$settings"); then

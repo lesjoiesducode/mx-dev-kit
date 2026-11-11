@@ -60,7 +60,9 @@
   },
 
   "agent": {
-    // macOS: auto (Terminal), Terminal or iTerm. Windows: auto, wt, powershell or pwsh.
+    // auto: the terminal of your last prompt (Terminal, iTerm, Ghostty 1.3+, Warp; Windows Terminal or
+    // a PowerShell window on Windows), Terminal when it cannot tell or from VS Code.
+    // Or force one. macOS: Terminal, iTerm, Ghostty or Warp. Windows: wt, powershell or pwsh.
     // For every agent bubble: Claude Code, Codex, Gemini CLI, Copilot CLI and Agent in project.
     "terminal": "auto",
     // Any other terminal: {dir} and {command} are replaced.

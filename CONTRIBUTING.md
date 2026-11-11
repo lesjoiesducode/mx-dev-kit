@@ -10,10 +10,12 @@ dotnet test tests/MxDevKit.Core.Tests
 sh tests/shell/run.sh          # the scripts and installers, with fake docker, curl, notifiers and release (macOS, Linux)
 ```
 
+The PowerShell scripts have Pester tests, `tests/powershell`, which CI runs on Windows in Windows PowerShell 5.1 and PowerShell 7 at every push and pull request. Most of them also run in PowerShell 7 on macOS: `Invoke-Pester tests/powershell` (Pester 5.5 or later).
+
 - Logic that does not need Logitech's API goes to `src/MxDevKit.Core`, with tests. The plugin project stays a thin layer: processes, timers, drawing, actions.
 - A new bubble needs English and French texts in `Strings.cs`, a state in `Bubbles.cs` and, if it shows in the README, a sample in `tools/BubblePreview/Samples.cs`.
 - A new haptic event goes to `HapticEvents.cs`, `package/events/DefaultEventSource.yaml` and `package/events/extra/eventMapping.yaml`: a test checks that the three agree.
-- A command-line tool comes as a `sh` script and a `.ps1` for Windows, installed by both installers, with tests in `tests/shell/run.sh`.
+- A command-line tool comes as a `sh` script and a `.ps1` for Windows, installed by both installers, with tests in `tests/shell/run.sh` and `tests/powershell`.
 - Scripts: POSIX `sh` when possible, bash 3.2 compatible (the one macOS ships), PowerShell 5.1 compatible on Windows. Never edit a user's file without a backup.
 - Installing and the basic features need nothing that macOS or Windows 10/11 do not ship: sh, curl, osascript, unzip, Windows PowerShell 5.1. No jq, Python, Node.js or .NET in an installer. A tool that only one feature needs (gh, docker, osv-scanner, npm) is optional: its absence turns that feature off and never stops the installation.
 - Keep the README in sync with what you change.

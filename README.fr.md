@@ -17,18 +17,16 @@ Un plugin pour l'Actions Ring de Logitech qui affiche l'état du dépôt sur leq
 
 <sub>Dessiné par le code du plugin lui-même. Dans Logi Options+, l'anneau est plus petit et s'ouvre autour du curseur.</sub>
 
-Logitech, Logi, MX Master, Logi Options+ et Actions Ring sont des marques de Logitech. Claude et Claude Code sont des marques d'Anthropic, Codex d'OpenAI, Gemini de Google, GitHub Copilot de GitHub. Leurs logos servent uniquement à désigner l'outil que lance chaque bulle.
-
 ## Ce qu'il fait
 
-- **Des bulles de projet** qui suivent le dépôt de votre dernière commande dans le terminal ou de votre fenêtre du Finder : nom et branche, issues et pull requests ouvertes, dernier run GitHub Actions, failles connues.
+- **Des bulles de projet** qui suivent le dépôt de votre dernière commande dans le terminal ou de votre fenêtre du Finder : nom et branche, issues et pull requests ouvertes, tous les checks du dernier commit, failles connues.
 - **Git depuis l'anneau.** Commit de toutes les modifications, push, pull. Le push n'est jamais forcé et le pull ne fait que de l'avance rapide. Une IA en ligne de commande peut rédiger le message de commit. Le commit refuse de partir pendant un conflit de merge ou si un fichier secret comme `.env` s'y glisse, et demande un second clic sur la branche principale.
-- **Les agents de code en un clic.** Claude Code, Codex, Gemini CLI et Copilot CLI ont chacun leur bulle à leur logo, qui ouvre un terminal dans le dépôt et y lance l'agent. **Agent dans le projet** fait la même chose avec la commande de votre choix.
+- **Les agents de code en un clic.** Claude Code, Codex, Gemini CLI et Copilot CLI ont chacun leur bulle à leur logo, qui ouvre dans le dépôt le terminal où vous travaillez (Terminal, iTerm, Ghostty, Warp ; Windows Terminal ou PowerShell) et y lance l'agent. **Agent dans le projet** fait la même chose avec la commande de votre choix.
 - **Une boîte GitHub** pour tous vos dépôts : revues demandées, mentions, assignations, PR approuvées, fusionnées, avec des changements demandés ou des checks en échec. Chaque événement fait vibrer la souris et affiche une notification cliquable.
 - **Les failles de n'importe quelle stack** avec osv-scanner, ou `npm audit` si osv-scanner n'est pas installé. Rien n'est jamais corrigé à votre place.
 - **Un minuteur focus** : 25 minutes de travail, puis 5 minutes de pause.
-- **Des hooks pour les agents de code.** Claude Code, Codex CLI, Gemini CLI et GitHub Copilot CLI font vibrer la souris quand ils ont fini, quand ils vous attendent ou quand ils plantent.
-- **L'intégration au terminal** pour zsh, bash et PowerShell. Toute commande de plus de 30 secondes vibre à la fin.
+- **Des hooks pour les agents de code.** Claude Code, Codex CLI, Gemini CLI et GitHub Copilot CLI font vibrer la souris quand ils ont fini un tour d'au moins 30 secondes, quand ils vous attendent ou quand ils plantent.
+- **L'intégration au terminal** pour zsh, bash, fish et PowerShell. Toute commande de plus de 30 secondes vibre à la fin.
 - **`uptime-watch`** pour surveiller des sites, des endpoints de santé et des ports locaux, **`docker-watch`** pour les conteneurs de votre stack compose.
 - **`haptic`** et **`mx-notify`** pour faire vibrer la souris ou afficher une notification cliquable depuis vos propres scripts.
 
@@ -88,6 +86,8 @@ Sous Windows : `& ([scriptblock]::Create((irm https://github.com/lesjoiesducode/
 
 Les téléchargements sont vérifiés avec `SHA256SUMS`. Les fichiers vont dans `~/.config/mx-dev-kit`, ou `%APPDATA%\mx-dev-kit` sous Windows, et chaque fichier modifié par l'installeur est d'abord sauvegardé.
 
+L'intégration au terminal va là où votre shell la lit. zsh : `~/.zshrc`, ou `$ZDOTDIR/.zshrc`. bash : `~/.bash_profile`, ou le `~/.bash_login` ou `~/.profile` que vous avez déjà. fish : un fichier à part, `~/.config/fish/conf.d/mx-dev-kit.fish`. Windows : `profile.ps1`, que chargent tous les hôtes (console, Windows Terminal, VS Code), pour Windows PowerShell et pour PowerShell 7 s'il est installé, dans votre dossier Documents où que Windows le range (OneDrive compris). Un autre shell : l'installeur le dit, n'écrit rien, et donne la ligne à ajouter à la main.
+
 Si vous préférez ne pas envoyer un script directement dans votre shell, téléchargez `mx-dev-kit.zip` depuis la [dernière release](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest) et lancez `./install.sh` depuis l'archive.
 
 Pour ajouter le plugin à la main, téléchargez [MxDevKit.lplug4](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/MxDevKit.lplug4), ouvrez le gestionnaire de plugins d'Options+ (réglages du retour haptique, **Install and uninstall plugins** dans l'interface en anglais) et double-cliquez sur le fichier pendant que cette fenêtre est ouverte. Sans elle, le double-clic ne fait rien.
@@ -124,14 +124,14 @@ Le plugin lance `git status` toutes les quelques secondes sans verrou optionnel 
 
 ## L'Actions Ring des développeurs
 
-Les bulles se mettent à jour toutes seules. GitHub est interrogé toutes les 60 secondes, toutes les 15 pendant qu'un workflow tourne. `git fetch` passe toutes les 3 minutes pour la bulle Pull.
+Les bulles se mettent à jour toutes seules. GitHub est interrogé toutes les 60 secondes, toutes les 15 pendant que des checks tournent et pendant les deux minutes qui suivent un push. `git fetch` passe toutes les 3 minutes pour la bulle Pull.
 
 | | Bulle | Affiche | Clic |
 |---|---|---|---|
 | <img src="docs/img/bubbles/project.png" width="48" alt=""> | Projet | Dépôt et branche | Ouvre le dépôt sur GitHub, sinon le dossier |
 | <img src="docs/img/bubbles/issues.png" width="48" alt=""> | Issues du projet | Issues ouvertes | Ouvre la liste |
 | <img src="docs/img/bubbles/pull-requests.png" width="48" alt=""> | PR du projet | Pull requests ouvertes | Ouvre la liste |
-| <img src="docs/img/bubbles/ci-failed.png" width="48" alt=""> | CI du projet | Dernier run Actions de la branche, vibre à la fin | Ouvre le run |
+| <img src="docs/img/bubbles/ci-failed.png" width="48" alt=""> | CI du projet | Tous les checks du dernier commit de la branche : tous les workflows, et les services qui publient leur statut sur GitHub (Vercel, Netlify, CircleCI...). Rouge dès qu'un seul échoue, vibre à la fin | Ouvre celui en échec, ou le run |
 | <img src="docs/img/bubbles/audit.png" width="48" alt=""> | Failles du projet | Failles de gravité high et critical par défaut | Relance l'analyse |
 | <img src="docs/img/bubbles/commit.png" width="48" alt=""> | Commit du projet | Fichiers modifiés | `git add -A` et commit, avec des [garde-fous](#garde-fous-du-commit) |
 | <img src="docs/img/bubbles/push.png" width="48" alt=""> | Push du projet | Commits à pousser | `git push`, publie une nouvelle branche |
@@ -181,7 +181,7 @@ Tout est facultatif. L'installeur crée `~/.config/mx-dev-kit/config.json` à pa
 }
 ```
 
-`agent.terminal` et `agent.launch` valent pour toutes les bulles d'agent. `agent.commands` change la ligne de commande de la bulle Claude Code, Codex, Gemini CLI ou Copilot CLI ; `agent.command` et `agent.label` sont ceux d'**Agent dans le projet**. `commit.messageCommand` reçoit le diff indexé sur son entrée standard. Sans lui, ou s'il échoue, le message est construit à partir de la liste des fichiers, du genre "Update app.ts, api.ts and 3 more files". `tools` ne sert que si le plugin ne trouve pas un outil, car il ne voit pas le PATH de votre shell.
+`agent.terminal` vaut `auto` par défaut : les bulles d'agent ouvrent le terminal de votre dernière commande, Terminal, iTerm, Ghostty (1.3 ou plus récent) ou Warp, et sous Windows Windows Terminal ou une fenêtre PowerShell. Le terminal de VS Code ne peut pas être ouvert de l'extérieur : depuis VS Code, l'agent s'ouvre dans Terminal (Windows Terminal sous Windows). Réglez `agent.terminal` pour en imposer un, ou `agent.launch` pour tout autre terminal. Les deux valent pour toutes les bulles d'agent. `agent.commands` change la ligne de commande de la bulle Claude Code, Codex, Gemini CLI ou Copilot CLI ; `agent.command` et `agent.label` sont ceux d'**Agent dans le projet**. `commit.messageCommand` reçoit le diff indexé sur son entrée standard. Sans lui, ou s'il échoue, le message est construit à partir de la liste des fichiers, du genre "Update app.ts, api.ts and 3 more files". `tools` ne sert que si le plugin ne trouve pas un outil, car il ne voit pas le PATH de votre shell.
 
 ## Langues
 
@@ -216,7 +216,7 @@ Le journal du plugin est `~/Library/Application Support/Logi/LogiPluginService/L
 
 Les vibrations restent sur l'ordinateur : les hooks et les scripts parlent au Haptic Web Plugin sur `127.0.0.1`.
 
-**Pourquoi macOS demande-t-il si Logi Plugin Service peut contrôler le Finder ?** Pour suivre le projet de la fenêtre du Finder au premier plan, le plugin demande son dossier au Finder par AppleScript. Refusez, ou mettez `"followFinder": false`, et le projet ne suivra plus que votre terminal. La même demande pour Terminal ou iTerm vient des bulles d'agent, qui ouvrent une fenêtre de terminal et y tapent la commande de l'agent.
+**Pourquoi macOS demande-t-il si Logi Plugin Service peut contrôler le Finder ?** Pour suivre le projet de la fenêtre du Finder au premier plan, le plugin demande son dossier au Finder par AppleScript. Refusez, ou mettez `"followFinder": false`, et le projet ne suivra plus que votre terminal. La même demande pour Terminal, iTerm ou Ghostty vient des bulles d'agent, qui ouvrent une fenêtre de terminal et y tapent la commande de l'agent.
 
 ## Désinstallation
 
@@ -248,5 +248,7 @@ La logique vit dans `src/MxDevKit.Core`, avec ses tests. `src/MxDevKitPlugin` es
 ## Crédits et licence
 
 Construit sur le [Logi Actions SDK](https://logitech.github.io/actions-sdk-docs/). Les vibrations des scripts passent par le [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) de Jasper M-W, licence MIT. Les installeurs le téléchargent depuis ses propres releases ; il ne fait pas partie de ce dépôt. Les logos des agents viennent de [Simple Icons](https://simpleicons.org) (Claude ; GitHub Copilot vient des [Primer octicons](https://primer.style/octicons) de GitHub) et de [Lobe Icons](https://github.com/lobehub/lobe-icons) (Codex, Gemini).
+
+Logitech, Logi, MX Master, Logi Options+ et Actions Ring sont des marques de Logitech. Claude et Claude Code sont des marques d'Anthropic, Codex d'OpenAI, Gemini de Google, GitHub Copilot de GitHub. Leurs logos servent uniquement à désigner l'outil que lance chaque bulle.
 
 [MIT](LICENSE) © 2026 [Les Joies du Code](https://lesjoiesducode.fr).

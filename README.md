@@ -17,18 +17,16 @@ A plugin for the Logitech Actions Ring that shows the state of the repository yo
 
 <sub>Drawn by the plugin's own code. In Logi Options+ the ring is smaller and opens around the cursor.</sub>
 
-Logitech, Logi, MX Master, Logi Options+ and Actions Ring are trademarks of Logitech. Claude and Claude Code are trademarks of Anthropic, Codex of OpenAI, Gemini of Google, GitHub Copilot of GitHub. Their marks only name the tool each bubble starts.
-
 ## Features
 
-- **Project bubbles** that follow the repository of your last terminal prompt or Finder window: name and branch, open issues, open pull requests, latest GitHub Actions run, known vulnerabilities.
+- **Project bubbles** that follow the repository of your last terminal prompt or Finder window: name and branch, open issues, open pull requests, every check of the latest commit, known vulnerabilities.
 - **Git from the ring.** Commit all changes, push, pull. Push never forces and pull only fast-forwards. An AI CLI can write the commit message. Commit refuses during a merge conflict or when a secret file such as `.env` would go in, and asks for a second click on the main branch.
-- **Coding agents in one click.** Claude Code, Codex, Gemini CLI and Copilot CLI each have a bubble with their mark, which opens a terminal in the repository and starts the agent. **Agent in project** does the same with any command you set.
+- **Coding agents in one click.** Claude Code, Codex, Gemini CLI and Copilot CLI each have a bubble with their mark, which opens the terminal you work in (Terminal, iTerm, Ghostty, Warp; Windows Terminal or PowerShell) in the repository and starts the agent. **Agent in project** does the same with any command you set.
 - **GitHub inbox** across all your repositories: review requests, mentions, assignments, approvals, merges, changes requested and failed checks on your pull requests. Each one vibrates and shows a notification you can click.
 - **Vulnerabilities for any stack** with osv-scanner, or `npm audit` when osv-scanner is not installed. It never fixes anything.
 - **Focus timer**, 25 minutes of work then a 5-minute break.
-- **Coding agent hooks.** Claude Code, Codex CLI, Gemini CLI and GitHub Copilot CLI vibrate when they finish, wait for you or fail.
-- **Shell integration** for zsh, bash and PowerShell. Any command longer than 30 seconds vibrates when it ends.
+- **Coding agent hooks.** Claude Code, Codex CLI, Gemini CLI and GitHub Copilot CLI vibrate when they finish a turn of 30 seconds or more, wait for you or fail.
+- **Shell integration** for zsh, bash, fish and PowerShell. Any command longer than 30 seconds vibrates when it ends.
 - **`uptime-watch`** for websites, health endpoints and local ports, **`docker-watch`** for the containers of your compose stack.
 - **`haptic`** and **`mx-notify`** to vibrate or show a clickable notification from your own scripts.
 
@@ -88,6 +86,8 @@ On Windows, the same is `& ([scriptblock]::Create((irm https://github.com/lesjoi
 
 Downloads are checked against `SHA256SUMS`. Files go to `~/.config/mx-dev-kit`, or `%APPDATA%\mx-dev-kit` on Windows, and every file the installer edits is backed up first.
 
+The terminal integration goes where your shell reads it. zsh: `~/.zshrc`, or `$ZDOTDIR/.zshrc`. bash: `~/.bash_profile`, or the `~/.bash_login` or `~/.profile` you already have. fish: a file of its own, `~/.config/fish/conf.d/mx-dev-kit.fish`. Windows: `profile.ps1`, which every host loads (console, Windows Terminal, VS Code), for Windows PowerShell and for PowerShell 7 when it is installed, in your Documents folder wherever Windows keeps it (OneDrive included). Another shell: the installer says so, writes nothing, and gives the line to add by hand.
+
 If you would rather not pipe a script into your shell, download `mx-dev-kit.zip` from the [latest release](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest) and run `./install.sh` from it.
 
 To add the plugin by hand instead, download [MxDevKit.lplug4](https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/MxDevKit.lplug4), open the plugins manager of Options+ (**Haptic feedback**, the settings popover, **Install and uninstall plugins**) and double-click the file while that window is open.
@@ -124,14 +124,14 @@ The plugin runs `git status` every few seconds without optional locks, so it nev
 
 ## Actions Ring for devs
 
-The bubbles refresh on their own. GitHub is polled every 60 seconds, every 15 while a workflow runs. `git fetch` runs every 3 minutes for the Pull bubble.
+The bubbles refresh on their own. GitHub is polled every 60 seconds, every 15 while checks run and for two minutes after a push. `git fetch` runs every 3 minutes for the Pull bubble.
 
 | | Bubble | Shows | Click |
 |---|---|---|---|
 | <img src="docs/img/bubbles/project.png" width="48" alt=""> | Project | Repository and branch | Opens it on GitHub, or the folder |
 | <img src="docs/img/bubbles/issues.png" width="48" alt=""> | Issues | Open issues | Opens the list |
 | <img src="docs/img/bubbles/pull-requests.png" width="48" alt=""> | Pull requests | Open pull requests | Opens the list |
-| <img src="docs/img/bubbles/ci-failed.png" width="48" alt=""> | CI status | Latest Actions run of the branch, vibrates when it ends | Opens the run |
+| <img src="docs/img/bubbles/ci-failed.png" width="48" alt=""> | CI status | Every check of the latest commit of the branch: all workflows, and the services that report to GitHub (Vercel, Netlify, CircleCI...). Red as soon as one fails, vibrates when they end | Opens the failing one, or the run |
 | <img src="docs/img/bubbles/audit.png" width="48" alt=""> | Vulnerabilities | High and critical advisories by default | Scans again |
 | <img src="docs/img/bubbles/commit.png" width="48" alt=""> | Commit all changes | Changed files | `git add -A` and commit, with [safeguards](#commit-safeguards) |
 | <img src="docs/img/bubbles/push.png" width="48" alt=""> | Push | Commits to push | `git push`, publishes a new branch |
@@ -179,7 +179,7 @@ Everything is optional. The installer creates `~/.config/mx-dev-kit/config.json`
 }
 ```
 
-`agent.terminal` and `agent.launch` apply to every agent bubble. `agent.commands` changes the command line of the Claude Code, Codex, Gemini CLI or Copilot CLI bubble; `agent.command` and `agent.label` are those of **Agent in project**. `commit.messageCommand` receives the staged diff on standard input. Without it, or if it fails, the message is built from the file list, like "Update app.ts, api.ts and 3 more files". `tools` is only needed when the plugin does not find a tool, because it does not see your shell's PATH.
+`agent.terminal` is `auto` by default: the agent bubbles open the terminal of your last prompt, Terminal, iTerm, Ghostty (1.3 or later) or Warp, and on Windows Windows Terminal or a PowerShell window. The terminal of VS Code cannot be opened from outside, so from VS Code the agent opens in Terminal (Windows Terminal on Windows). Set `agent.terminal` to force one, or `agent.launch` for any other terminal. Both apply to every agent bubble. `agent.commands` changes the command line of the Claude Code, Codex, Gemini CLI or Copilot CLI bubble; `agent.command` and `agent.label` are those of **Agent in project**. `commit.messageCommand` receives the staged diff on standard input. Without it, or if it fails, the message is built from the file list, like "Update app.ts, api.ts and 3 more files". `tools` is only needed when the plugin does not find a tool, because it does not see your shell's PATH.
 
 ## Languages
 
@@ -214,7 +214,7 @@ The plugin log is `~/Library/Application Support/Logi/LogiPluginService/Logs/plu
 
 Vibrations stay on the computer: the hooks and scripts talk to the Haptic Web Plugin on `127.0.0.1`.
 
-**Why does macOS ask whether Logi Plugin Service may control the Finder?** To follow the project of the front Finder window, the plugin asks the Finder for its folder through AppleScript. Refuse it, or set `"followFinder": false`, and the project follows your terminal only. The same kind of request for Terminal or iTerm comes from the agent bubbles, which open a terminal window and type the agent's command in it.
+**Why does macOS ask whether Logi Plugin Service may control the Finder?** To follow the project of the front Finder window, the plugin asks the Finder for its folder through AppleScript. Refuse it, or set `"followFinder": false`, and the project follows your terminal only. The same kind of request for Terminal, iTerm or Ghostty comes from the agent bubbles, which open a terminal window and type the agent's command in it.
 
 ## Uninstall
 
@@ -246,5 +246,7 @@ The logic lives in `src/MxDevKit.Core`, with its tests. `src/MxDevKitPlugin` is 
 ## Credits and license
 
 Built on the [Logi Actions SDK](https://logitech.github.io/actions-sdk-docs/). Script vibrations go through the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W, MIT license. The installers download it from its own releases; it is not part of this repository. The agent marks come from [Simple Icons](https://simpleicons.org) (Claude, GitHub Copilot from GitHub's [Primer octicons](https://primer.style/octicons)) and [Lobe Icons](https://github.com/lobehub/lobe-icons) (Codex, Gemini).
+
+Logitech, Logi, MX Master, Logi Options+ and Actions Ring are trademarks of Logitech. Claude and Claude Code are trademarks of Anthropic, Codex of OpenAI, Gemini of Google, GitHub Copilot of GitHub. Their marks only name the tool each bubble starts.
 
 [MIT](LICENSE) © 2026 [Les Joies du Code](https://lesjoiesducode.fr).

@@ -220,7 +220,8 @@ public sealed class AgentConfig
     public string Label { get; set; } = "Claude Code";
     public string Command { get; set; } = "claude";
 
-    // macOS: auto, Terminal, iTerm. Windows: auto, wt, powershell, pwsh.
+    // auto: the terminal of the last prompt (see Terminals). macOS: Terminal, iTerm, Ghostty, Warp.
+    // Windows: wt, powershell, pwsh.
     public string Terminal { get; set; } = "auto";
 
     // Full control over the launch, e.g. ["open", "-na", "Ghostty", "--args", "--working-directory={dir}", "-e", "{command}"].

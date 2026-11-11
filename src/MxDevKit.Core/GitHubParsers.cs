@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace MxDevKit;
@@ -13,17 +14,26 @@ public enum CiState
     Failed,
 }
 
-public sealed record CiRun(CiState State, long? Id, string? Url);
+// The checks of one commit: State sums them up, Url is the one worth opening (a failure first).
+public sealed record CiRun(CiState State, string? Commit, string? Url);
 
 public static class GitHubParsers
 {
-    public const string RepoCountsQuery =
-        "query($owner:String!,$name:String!){repository(owner:$owner,name:$name){" +
-        "issues(states:OPEN){totalCount} pullRequests(states:OPEN){totalCount}}}";
+    // Open issues and pull requests, and every check of the head commit of the branch: the check runs of
+    // all workflows and of the GitHub Apps (CircleCI, Vercel...), and the commit statuses (Netlify...).
+    // The default branch stands in when the branch is not on GitHub or has no check at all.
+    public const string RepoStatusQuery =
+        "query($owner:String!,$name:String!,$branch:String!){repository(owner:$owner,name:$name){" +
+        "issues(states:OPEN){totalCount} pullRequests(states:OPEN){totalCount} " +
+        "ref(qualifiedName:$branch){target{...Checks}} defaultBranchRef{target{...Checks}}}} " +
+        "fragment Checks on Commit{oid statusCheckRollup{state contexts(first:100){nodes{__typename " +
+        "...on CheckRun{status conclusion detailsUrl checkSuite{workflowRun{url}}} " +
+        "...on StatusContext{state targetUrl}}}}}";
 
-    public const string RunFields = "databaseId,status,conclusion,url";
+    // The variable $branch of RepoStatusQuery. A detached HEAD has none: the default branch shows.
+    public static string BranchRef(string? branch) => string.IsNullOrEmpty(branch) ? "" : "refs/heads/" + branch;
 
-    // `gh api graphql` with RepoCountsQuery.
+    // `gh api graphql` with RepoStatusQuery.
     public static (int Issues, int PullRequests)? RepoCounts(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -51,8 +61,8 @@ public static class GitHubParsers
         }
     }
 
-    // `gh run list --json databaseId,status,conclusion,url -L 1`
-    public static CiRun? LatestRun(string? json)
+    // `gh api graphql` with RepoStatusQuery: the checks of the branch, else of the default branch.
+    public static CiRun? CommitChecks(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -62,21 +72,21 @@ public static class GitHubParsers
         try
         {
             using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            if (!doc.RootElement.TryGetProperty("data", out var data)
+                || !data.TryGetProperty("repository", out var repo)
+                || repo.ValueKind != JsonValueKind.Object)
             {
                 return null;
             }
 
-            if (doc.RootElement.GetArrayLength() == 0)
+            var branch = Commit(repo, "ref");
+            if (branch is { HasChecks: true })
             {
-                return new CiRun(CiState.None, null, null);
+                return branch.Run;
             }
 
-            var run = doc.RootElement[0];
-            var status = Text(run, "status");
-            var conclusion = Text(run, "conclusion");
-            long? id = run.TryGetProperty("databaseId", out var d) && d.TryGetInt64(out var v) ? v : null;
-            return new CiRun(StateOf(status, conclusion), id, Text(run, "url"));
+            var main = Commit(repo, "defaultBranchRef");
+            return main is { HasChecks: true } ? main.Run : branch?.Run ?? main?.Run ?? new CiRun(CiState.None, null, null);
         }
         catch (Exception e) when (e is JsonException or InvalidOperationException)
         {
@@ -84,6 +94,72 @@ public static class GitHubParsers
         }
     }
 
+    private sealed record CommitStatus(CiRun Run, bool HasChecks);
+
+    private static CommitStatus? Commit(JsonElement repo, string name)
+    {
+        if (!repo.TryGetProperty(name, out var r) || r.ValueKind != JsonValueKind.Object
+            || !r.TryGetProperty("target", out var commit) || commit.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var oid = Text(commit, "oid");
+        if (!commit.TryGetProperty("statusCheckRollup", out var rollup) || rollup.ValueKind != JsonValueKind.Object)
+        {
+            return new CommitStatus(new CiRun(CiState.None, oid, null), false);
+        }
+
+        var checks = new List<(CiState State, string? Url)>();
+        if (rollup.TryGetProperty("contexts", out var contexts) && contexts.ValueKind == JsonValueKind.Object
+            && contexts.TryGetProperty("nodes", out var nodes) && nodes.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var node in nodes.EnumerateArray())
+            {
+                if (node.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                if (Text(node, "__typename") == "StatusContext")
+                {
+                    checks.Add((StatusState(Text(node, "state")), Text(node, "targetUrl")));
+                }
+                else
+                {
+                    var run = node.TryGetProperty("checkSuite", out var suite) && suite.ValueKind == JsonValueKind.Object
+                        && suite.TryGetProperty("workflowRun", out var w) && w.ValueKind == JsonValueKind.Object ? Text(w, "url") : null;
+                    checks.Add((StateOf(Text(node, "status"), Text(node, "conclusion")), run ?? Text(node, "detailsUrl")));
+                }
+            }
+        }
+
+        var state = Overall(checks.Select(c => c.State), Text(rollup, "state"));
+        var url = checks.Where(c => c.State == CiState.Failed).Concat(checks.Where(c => c.State == CiState.Running)).Concat(checks)
+            .Select(c => c.Url).FirstOrDefault(u => !string.IsNullOrEmpty(u));
+        return new CommitStatus(new CiRun(state, oid, url), true);
+    }
+
+    // Red as soon as one check fails, running while one still runs, green when the others passed.
+    // The rollup state of GitHub covers the checks beyond the first 100.
+    public static CiState Overall(IEnumerable<CiState> checks, string? rollup = null)
+    {
+        var all = checks.ToList();
+        var failed = all.Contains(CiState.Failed) || rollup is "FAILURE" or "ERROR";
+        if (failed)
+        {
+            return CiState.Failed;
+        }
+
+        if (all.Contains(CiState.Running) || rollup is "PENDING" or "EXPECTED")
+        {
+            return CiState.Running;
+        }
+
+        return all.Contains(CiState.Passed) || (all.Count == 0 && rollup == "SUCCESS") ? CiState.Passed : CiState.None;
+    }
+
+    // A check run: status QUEUED, IN_PROGRESS, COMPLETED..., conclusion SUCCESS, FAILURE, SKIPPED...
     public static CiState StateOf(string? status, string? conclusion)
     {
         if (!string.Equals(status, "completed", StringComparison.OrdinalIgnoreCase))
@@ -94,20 +170,36 @@ public static class GitHubParsers
         return conclusion?.ToLowerInvariant() switch
         {
             "success" => CiState.Passed,
-            "skipped" or "neutral" => CiState.None,
+            "skipped" or "neutral" or "stale" => CiState.None,
             _ => CiState.Failed,
         };
     }
 
-    // The run the bubble was showing as running has just finished: Passed or Failed, else null.
-    public static CiState? Finished(CiRun? before, CiRun? now)
+    // A commit status (Netlify, Jenkins...): SUCCESS, PENDING, EXPECTED, FAILURE, ERROR.
+    public static CiState StatusState(string? state) => state?.ToUpperInvariant() switch
     {
-        if (before is not { State: CiState.Running, Id: not null } || now is null || now.Id != before.Id)
+        "SUCCESS" => CiState.Passed,
+        "PENDING" or "EXPECTED" => CiState.Running,
+        "FAILURE" or "ERROR" => CiState.Failed,
+        _ => CiState.Unknown,
+    };
+
+    // The checks have just ended: Passed or Failed, else null. Either the bubble saw them running on
+    // this commit, or a push came shortly before (checks fast enough to end between two polls).
+    public static CiState? Finished(CiRun? before, CiRun? now, bool afterPush = false)
+    {
+        if (now is not { State: CiState.Passed or CiState.Failed, Commit: not null })
         {
             return null;
         }
 
-        return now.State is CiState.Passed or CiState.Failed ? now.State : null;
+        if (before is { State: CiState.Running } && before.Commit == now.Commit)
+        {
+            return now.State;
+        }
+
+        var fresh = before == null || before.Commit != now.Commit || before.State is CiState.None or CiState.Unknown;
+        return afterPush && fresh ? now.State : null;
     }
 
     private static string? Text(JsonElement e, string name) =>

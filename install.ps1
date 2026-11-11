@@ -21,7 +21,11 @@
 # latest release. It goes to the plugins folder of Logi Plugin Service, which then loads it.
 # The Haptic Web Plugin (github.com/Fallstop/HapticWebPlugin, MIT) comes from its latest release,
 # the same way, unless it is already installed: an existing one is never replaced.
-# Every file it changes ($PROFILE, agent settings.json) is backed up first.
+# The terminal integration goes to profile.ps1, which every host loads (console, Windows Terminal,
+# VS Code), of Windows PowerShell and of PowerShell 7 when it is installed, in Documents wherever
+# Windows keeps it (OneDrive included). Once each: a line already there, by hand or from an earlier
+# version in a host profile, is not added twice (the earlier block moves to profile.ps1).
+# Every file it changes (profiles, agent settings.json) is backed up first.
 # %APPDATA%\mx-dev-kit\uninstall.ps1 reverses it.
 # Untested on Windows: please test before relying on it, issues and PRs welcome.
 
@@ -69,7 +73,7 @@ if (-not $PSScriptRoot -or -not (Test-Path (Join-Path $PSScriptRoot 'hooks\insta
         foreach ($p in $PSBoundParameters.Keys) {
             if ($p -eq 'Only') { $arguments += '-Only', ($Only -join ',') } else { $arguments += "-$p" }
         }
-        # The same PowerShell (Windows PowerShell or PowerShell 7): $PROFILE is the one you use.
+        # The same PowerShell as the one that runs this (Windows PowerShell or PowerShell 7).
         $exe = (Get-Process -Id $PID).Path
         if ((Split-Path -Leaf $exe) -notmatch '^(powershell|pwsh)(\.exe)?$') {
             $exe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
@@ -85,9 +89,9 @@ if (-not $PSScriptRoot -or -not (Test-Path (Join-Path $PSScriptRoot 'hooks\insta
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'hooks\settings-json.ps1')
+. (Join-Path $PSScriptRoot 'shell\profiles.ps1')
 $root = $PSScriptRoot
 $state = Join-Path $env:APPDATA 'mx-dev-kit'
-$marker = '# >>> mx-dev-kit >>>'
 $plugins = Join-Path $env:LOCALAPPDATA 'Logi\LogiPluginService\Plugins'
 $hapticWebUrl = if ($env:MX_HAPTIC_WEB_URL) { $env:MX_HAPTIC_WEB_URL } else { 'https://github.com/Fallstop/HapticWebPlugin/releases/latest/download/HapticWeb.lplug4' }
 $yaml = Join-Path $root 'src\MxDevKitPlugin\package\metadata\LoupedeckPackage.yaml'
@@ -139,14 +143,6 @@ function Move-Legacy {
     }
     if (-not (Get-ChildItem $legacy -Force -ErrorAction SilentlyContinue)) { Remove-Item $legacy -ErrorAction SilentlyContinue }
     Write-Host "Replaced Ring Dev Kit, the former name of this kit (your settings moved to $state)."
-}
-
-function Backup([string]$Path) {
-    if (Test-Path $Path) {
-        $b = Get-BackupName $Path
-        Copy-Item $Path $b
-        Write-Host "Backup: $b"
-    }
 }
 
 function Get-InstalledVersion {
@@ -355,7 +351,9 @@ if ($tools) {
     Write-Host "haptic, mx-notify, uptime-watch and docker-watch in $state\bin"
 }
 # The uninstaller stays here, so that it works once this folder is gone.
+New-Item -ItemType Directory -Force -Path (Join-Path $state 'shell') | Out-Null
 Copy-Item (Join-Path $root 'uninstall.ps1') $state -Force
+Copy-Item (Join-Path $root 'shell\profiles.ps1') (Join-Path $state 'shell') -Force
 Copy-Item (Join-Path $root 'hooks\uninstall.ps1'), (Join-Path $root 'hooks\settings-json.ps1') (Join-Path $state 'hooks') -Force
 Copy-Item (Join-Path $root 'config.example.json') $state -Force
 if (Test-Path (Join-Path $state 'config.json')) {
@@ -369,17 +367,8 @@ Get-ChildItem $state -Recurse -File -Include *.ps1 | Unblock-File -ErrorAction S
 
 if ($shell) {
     Write-Host "`n== PowerShell"
-    if ((Test-Path $PROFILE) -and (Select-String -Path $PROFILE -SimpleMatch $marker -Quiet)) {
-        Write-Host "Already in $PROFILE"
-    } else {
-        New-Item -ItemType Directory -Force -Path (Split-Path $PROFILE) | Out-Null
-        Backup $PROFILE
-        # $env:APPDATA unexpanded: the line stays ASCII whatever the encoding of the profile.
-        $line = '. "$env:APPDATA\mx-dev-kit\shell\mx.ps1"'
-        Add-Content -Path $PROFILE -Value "`n$marker`n$line`n# <<< mx-dev-kit <<<"
-        Write-Host "Added to $PROFILE (open a new terminal to use it)"
-    }
-    $policy = Get-ExecutionPolicy
+    Install-MxProfiles
+    $policy = try { Get-ExecutionPolicy } catch { $null }
     if ($policy -eq 'Restricted' -or $policy -eq 'AllSigned') {
         Write-Host "PowerShell runs no profile script with the execution policy $policy. To let it load the integration:"
         Write-Host '  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned'

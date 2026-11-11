@@ -1,7 +1,7 @@
 # MX Dev Kit: shell integration for bash (macOS, and Git Bash on Windows).
 # Source it from ~/.bashrc (or ~/.bash_profile on macOS).
 #
-#   - tells the MX Dev Kit plugin which folder you are working in
+#   - tells the MX Dev Kit plugin which folder and which terminal app you are working in
 #   - commands that run longer than MX_LONG_COMMAND_SECONDS vibrate when they end
 #   - buzz <command>        vibrates when the command ends, whatever its duration
 #   - ci-watch [sha]        waits for the GitHub Actions runs of a commit, vibrates at the end
@@ -29,6 +29,10 @@ MX_LONG_COMMAND_IGNORE=${MX_LONG_COMMAND_IGNORE:-"vim nvim vi nano emacs micro l
 
 [[ -d $MX_DEV_KIT_DIR/bin && ":$PATH:" != *":$MX_DEV_KIT_DIR/bin:"* ]] && PATH="$MX_DEV_KIT_DIR/bin:$PATH"
 mkdir -p "$MX_STATE_DIR" 2>/dev/null
+
+# The terminal app, for the agent bubbles: TERM_PROGRAM, and the bundle id of the app (macOS, it
+# survives tmux) or Windows Terminal.
+_mx_terminal="${TERM_PROGRAM-}"$'\t'"${__CFBundleIdentifier-${WT_SESSION:+WindowsTerminal}}"
 
 # Non-blocking: the prompt never waits for the mouse.
 mx_haptic() {
@@ -93,6 +97,7 @@ _mx_precmd() {
   unset _mx_buzzed _mx_start _mx_cmd _mx_armed
 
   _mx_pwd >| "$MX_STATE_DIR/current-dir" 2>/dev/null
+  printf '%s\n' "$_mx_terminal" >| "$MX_STATE_DIR/current-terminal" 2>/dev/null
 
   [[ -n $start && -z $buzzed ]] || return 0
   (( MX_LONG_COMMAND_SECONDS > 0 && SECONDS - start >= MX_LONG_COMMAND_SECONDS )) || return 0

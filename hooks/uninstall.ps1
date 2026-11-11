@@ -11,7 +11,7 @@ $claudeDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-
 $codexDir = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME '.codex' }
 $copilotDir = if ($env:COPILOT_HOME) { $env:COPILOT_HOME } else { Join-Path $HOME '.copilot' }
 
-foreach ($path in @((Join-Path $claudeDir 'settings.json'), (Join-Path $HOME '.gemini/settings.json'), (Join-Path $codexDir 'hooks.json'))) {
+foreach ($path in @((Join-Path $claudeDir 'settings.json'), (Join-Path $(if ($env:GEMINI_CLI_HOME) { $env:GEMINI_CLI_HOME } else { $HOME }) '.gemini/settings.json'), (Join-Path $codexDir 'hooks.json'))) {
     if (-not (Test-Path $path) -or -not (Select-String -Path $path -Pattern 'agent-haptics' -Quiet)) { continue }
     try {
         $settings = Read-SettingsJson $path

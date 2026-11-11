@@ -8,6 +8,9 @@ internal sealed class ProjectWatcher : IDisposable
     private static readonly TimeSpan BranchEvery = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan LocalEvery = TimeSpan.FromSeconds(4);
 
+    // How long GitHub is polled at the running pace after a push.
+    private static readonly TimeSpan PushWatch = TimeSpan.FromMinutes(2);
+
     // A lockfile that changed (npm install, poetry lock...) gets a new scan once it has settled.
     private static readonly TimeSpan AuditAfterLockfileChange = TimeSpan.FromSeconds(5);
 
@@ -38,6 +41,7 @@ internal sealed class ProjectWatcher : IDisposable
     private DateTime _lastGitHub;
     private DateTime _lastAudit;
     private DateTime? _redrawAt;
+    private DateTime? _pushedAt;
 
     // Lockfiles of the project (git ls-files), what they looked like, and the commit they come from.
     private IReadOnlyList<string> _lockfiles = Array.Empty<string>();
@@ -167,7 +171,8 @@ internal sealed class ProjectWatcher : IDisposable
             }
 
             var github = DevKit.Config.GitHub;
-            var githubEvery = TimeSpan.FromSeconds(this.View.Ci?.State == CiState.Running ? github.RunningRefreshSeconds : github.RefreshSeconds);
+            var fast = this.View.Ci?.State == CiState.Running || this.AfterPush(now);
+            var githubEvery = TimeSpan.FromSeconds(fast ? github.RunningRefreshSeconds : github.RefreshSeconds);
             if (github.Enabled && this.View.Repo != null && now - _lastGitHub > githubEvery)
             {
                 _lastGitHub = now;
@@ -279,6 +284,7 @@ internal sealed class ProjectWatcher : IDisposable
 
         _lastBranch = DateTime.UtcNow;
         _lastFetch = DateTime.MinValue;
+        _pushedAt = null;
         _head = Git(root, 5, "rev-parse", "HEAD")?.Trim();
         this.ListLockfiles(root);
         this.RefreshSoon();
@@ -306,6 +312,14 @@ internal sealed class ProjectWatcher : IDisposable
 
         // Fails quietly when the branch has no upstream.
         var counts = GitParsers.AheadBehind(Git(root, 10, "rev-list", "--left-right", "--count", "@{upstream}...HEAD", "--"));
+        var before = this.View;
+
+        // Commits to push that are gone while the branch stayed: a git push from a terminal.
+        if (before.Root == root && before.Ahead > 0 && counts?.Ahead == 0 && this.CurrentBranch(root) == before.Branch)
+        {
+            this.Pushed();
+        }
+
         this.Update(v => v.Root != root ? v : v with { Changes = changes, Behind = counts?.Behind, Ahead = counts?.Ahead });
     }
 
@@ -319,29 +333,19 @@ internal sealed class ProjectWatcher : IDisposable
             return;
         }
 
+        // One call for the counts and every check of the head commit (all workflows, GitHub Apps, statuses).
         var parts = view.Repo.Split('/');
-        var counts = RunGh(gh, view.Root, out var authProblem, "api", "graphql",
-            "-f", "query=" + GitHubParsers.RepoCountsQuery, "-F", "owner=" + parts[0], "-F", "name=" + parts[1]);
+        var status = RunGh(gh, view.Root, out var authProblem, "api", "graphql",
+            "-f", "query=" + GitHubParsers.RepoStatusQuery, "-F", "owner=" + parts[0], "-F", "name=" + parts[1],
+            "-f", "branch=" + GitHubParsers.BranchRef(view.Branch));
         if (authProblem)
         {
             this.GitHubUnavailable("gh is not signed in: run gh auth login");
             return;
         }
 
-        var issuesAndPrs = GitHubParsers.RepoCounts(counts);
-
-        var listArgs = new List<string> { "run", "list", "-R", view.Repo, "-L", "1", "--json", GitHubParsers.RunFields };
-        CiRun? ci = null;
-        if (view.Branch != null)
-        {
-            ci = GitHubParsers.LatestRun(RunGh(gh, view.Root, out _, listArgs.Concat(new[] { "-b", view.Branch }).ToArray()));
-        }
-
-        // No run on this branch yet (new branch, CI added by a pull request...): latest run of the repository.
-        if (ci == null || ci.State == CiState.None)
-        {
-            ci = GitHubParsers.LatestRun(RunGh(gh, view.Root, out _, listArgs.ToArray())) ?? ci;
-        }
+        var issuesAndPrs = GitHubParsers.RepoCounts(status);
+        var ci = GitHubParsers.CommitChecks(status);
 
         CiRun? before = null;
         this.Update(v =>
@@ -362,12 +366,22 @@ internal sealed class ProjectWatcher : IDisposable
         });
 
         _ghWarned = false;
-        var finished = GitHubParsers.Finished(before, ci);
+        var finished = GitHubParsers.Finished(before, ci, this.AfterPush(DateTime.UtcNow));
         if (finished != null && DevKit.Config.GitHub.NotifyCi)
         {
-            PluginLog.Info($"{view.Repo}: workflow run {ci?.Id} {finished}");
+            PluginLog.Info($"{view.Repo}: checks of {ci?.Commit?[..Math.Min(7, ci.Commit.Length)]} {finished}");
             DevKit.Haptics.Raise(finished == CiState.Passed ? HapticEvents.CiPassed : HapticEvents.CiFailed);
         }
+    }
+
+    // A push from the bubble or from a terminal: GitHub is polled faster for a while, so that checks
+    // which start and end between two regular polls still vibrate.
+    private bool AfterPush(DateTime now) => _pushedAt is { } at && now - at < PushWatch;
+
+    private void Pushed()
+    {
+        _pushedAt = DateTime.UtcNow;
+        _lastGitHub = DateTime.MinValue;
     }
 
     private void GitHubUnavailable(string reason)
@@ -595,7 +609,7 @@ internal sealed class ProjectWatcher : IDisposable
                 this.RefreshLocal();
                 if (ok && action == GitActions.Push)
                 {
-                    _lastGitHub = DateTime.MinValue; // a push usually starts a workflow
+                    this.Pushed(); // a push usually starts checks
                 }
             }
         });

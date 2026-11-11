@@ -17,7 +17,7 @@ $ErrorActionPreference = 'Stop'
 
 $state = if ($env:APPDATA) { Join-Path $env:APPDATA 'mx-dev-kit' } else { Join-Path $HOME '.config/mx-dev-kit' }
 $claudeDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $HOME '.claude' }
-$geminiDir = Join-Path $HOME '.gemini'
+$geminiDir = Join-Path $(if ($env:GEMINI_CLI_HOME) { $env:GEMINI_CLI_HOME } else { $HOME }) '.gemini'
 $codexDir = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME '.codex' }
 $copilotDir = if ($env:COPILOT_HOME) { $env:COPILOT_HOME } else { Join-Path $HOME '.copilot' }
 
@@ -45,6 +45,7 @@ $command = "powershell -NoProfile -ExecutionPolicy Bypass -File `"$($hook -repla
 $targets = @()
 if ($Claude) {
     $targets += @{ Name = 'Claude Code'; Path = (Join-Path $claudeDir 'settings.json'); Events = [ordered]@{
+        UserPromptSubmit = [ordered]@{ type = 'command'; command = "$command claude UserPromptSubmit"; timeout = 5 }
         Stop = [ordered]@{ type = 'command'; command = "$command claude Stop"; timeout = 5 }
         Notification = [ordered]@{ type = 'command'; command = "$command claude Notification"; timeout = 5 }
         StopFailure = [ordered]@{ type = 'command'; command = "$command claude StopFailure"; timeout = 5 }
@@ -52,12 +53,14 @@ if ($Claude) {
 }
 if ($Gemini) {
     $targets += @{ Name = 'Gemini CLI'; Path = (Join-Path $geminiDir 'settings.json'); Events = [ordered]@{
+        BeforeAgent = [ordered]@{ name = 'mx-dev-kit-haptics'; type = 'command'; command = "$command gemini BeforeAgent"; timeout = 5000 }
         AfterAgent = [ordered]@{ name = 'mx-dev-kit-haptics'; type = 'command'; command = "$command gemini AfterAgent"; timeout = 5000 }
         Notification = [ordered]@{ name = 'mx-dev-kit-haptics'; type = 'command'; command = "$command gemini Notification"; timeout = 5000 }
     } }
 }
 if ($Codex) {
     $targets += @{ Name = 'Codex CLI'; Path = (Join-Path $codexDir 'hooks.json'); Events = [ordered]@{
+        UserPromptSubmit = [ordered]@{ type = 'command'; command = "$command codex UserPromptSubmit"; timeout = 5 }
         Stop = [ordered]@{ type = 'command'; command = "$command codex Stop"; timeout = 5 }
         PermissionRequest = [ordered]@{ type = 'command'; command = "$command codex PermissionRequest"; timeout = 5 }
     } }
@@ -68,7 +71,7 @@ if ($Codex) {
 if ($Copilot) {
     $file = Join-Path $copilotDir 'hooks\mx-dev-kit.json'
     $events = [ordered]@{}
-    foreach ($name in 'agentStop', 'notification', 'errorOccurred') {
+    foreach ($name in 'userPromptSubmitted', 'agentStop', 'notification', 'errorOccurred') {
         $events[$name] = @([ordered]@{ type = 'command'; powershell = "$command copilot $name"; timeoutSec = 5 })
     }
     $content = ConvertTo-Json ([ordered]@{ version = 1; hooks = $events }) -Depth 8

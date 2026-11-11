@@ -1,9 +1,10 @@
 # MX Dev Kit: shell integration for PowerShell (Windows PowerShell 5.1 and PowerShell 7).
-# Dot-source it from your profile (notepad $PROFILE), after any prompt theme:
+# The installer loads it from profile.ps1, the profile of every host (console, Windows Terminal, VS Code),
+# of Windows PowerShell and of PowerShell 7. By hand, dot-source it after any prompt theme:
 #
 #   . "$env:APPDATA\mx-dev-kit\shell\mx.ps1"
 #
-#   - tells the MX Dev Kit plugin which folder you are working in
+#   - tells the MX Dev Kit plugin which folder and which terminal you are working in
 #   - commands that run longer than $env:MX_LONG_COMMAND_SECONDS vibrate when they end
 #   - buzz <command>        vibrates when the command ends, whatever its duration
 #   - ci-watch [sha]        waits for the GitHub Actions runs of a commit, vibrates at the end
@@ -22,14 +23,32 @@ if ((Test-Path $ringBin) -and ($env:PATH -split [IO.Path]::PathSeparator) -notco
     $env:PATH = $ringBin + [IO.Path]::PathSeparator + $env:PATH
 }
 
-if ($PSVersionTable.PSVersion.Major -lt 6) {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-}
+# The terminal, for the agent bubbles: Windows Terminal, the one of VS Code, or a console window,
+# and the PowerShell this prompt runs in.
+$global:MxTerminal = (@(
+    $(if ($env:TERM_PROGRAM) { $env:TERM_PROGRAM } elseif ($env:WT_SESSION) { 'WindowsTerminal' } else { 'console' }),
+    $(if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh' } else { 'powershell' })
+) -join "`t")
 
+# Never waits: curl.exe (built into Windows 10 and 11) is started and left to it, so the prompt goes on
+# at once. local.jmw.nz is a public name for 127.0.0.1, resolved locally: no DNS, works offline.
 function global:Invoke-MxHaptic([string]$Waveform) {
     if (Test-Path (Join-Path $global:MxStateDir 'haptics.off')) { return }
+    $curl = if ($env:SystemRoot -and (Test-Path (Join-Path $env:SystemRoot 'System32\curl.exe'))) { Join-Path $env:SystemRoot 'System32\curl.exe' } else { 'curl' }
     try {
-        Invoke-RestMethod -Method Post -Uri "$($env:MX_HAPTIC_URL.TrimEnd('/'))/$Waveform" -Body '' -ContentType 'text/plain' -TimeoutSec 2 | Out-Null
+        $psi = New-Object Diagnostics.ProcessStartInfo $curl
+        $sink = if ($env:OS -eq 'Windows_NT') { 'NUL' } else { '/dev/null' }
+        $psi.Arguments = "-s -m 2 -o $sink -X POST -d `"`" --resolve local.jmw.nz:41443:127.0.0.1 `"$($env:MX_HAPTIC_URL.TrimEnd('/'))/$Waveform`""
+        if ($env:OS -eq 'Windows_NT') {
+            # Through ShellExecute, curl.exe inherits none of our handles (nothing waits for it) and shows no window.
+            $psi.UseShellExecute = $true
+            $psi.WindowStyle = 'Hidden'
+        } else {
+            $psi.UseShellExecute = $false
+            $psi.RedirectStandardOutput = $true
+            $psi.RedirectStandardError = $true
+        }
+        ([Diagnostics.Process]::Start($psi)).Dispose()
     } catch { }
 }
 
@@ -67,6 +86,7 @@ function global:ci-watch([string]$Sha) {
 function global:Invoke-MxAfterCommand([bool]$Ok) {
     if ($PWD.Provider.Name -eq 'FileSystem') {
         try { [IO.File]::WriteAllText((Join-Path $global:MxStateDir 'current-dir'), $PWD.ProviderPath) } catch { }
+        try { [IO.File]::WriteAllText((Join-Path $global:MxStateDir 'current-terminal'), $global:MxTerminal) } catch { }
     }
 
     $buzzed = $global:MxBuzzed

@@ -10,6 +10,7 @@ param([switch]$Purge)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'hooks/settings-json.ps1')
+. (Join-Path $PSScriptRoot 'shell/profiles.ps1')
 $root = $PSScriptRoot
 $state = Join-Path $env:APPDATA 'mx-dev-kit'
 $plugins = Join-Path $env:LOCALAPPDATA 'Logi\LogiPluginService\Plugins'
@@ -43,35 +44,13 @@ if (Test-Path (Join-Path $plugins 'HapticWeb')) {
 }
 
 Write-Host '== PowerShell'
-if ((Test-Path $PROFILE) -and (Select-String -Path $PROFILE -SimpleMatch '>>> mx-dev-kit >>>' -Quiet)) {
-    $backup = Get-BackupName $PROFILE
-    Copy-Item $PROFILE $backup
-    # Same encoding as before: the byte order mark, or the one PowerShell reads a file without it.
-    $reader = New-Object IO.StreamReader($backup, [Text.Encoding]::Default, $true)
-    try { $text = $reader.ReadToEnd(); $encoding = $reader.CurrentEncoding } finally { $reader.Dispose() }
-    $kept = New-Object Collections.Generic.List[string]
-    $inside = $false
-    $blank = $false
-    foreach ($line in ($text -split "`r?`n")) {
-        if ($inside) { if ($line -eq '# <<< mx-dev-kit <<<') { $inside = $false }; continue }
-        # The block, and the empty line install.ps1 put before it.
-        if ($line -eq '# >>> mx-dev-kit >>>') { $inside = $true; $blank = $false; continue }
-        if ($blank) { $kept.Add(''); $blank = $false }
-        if ($line -eq '') { $blank = $true; continue }
-        $kept.Add($line)
-    }
-    $newline = if ($text -match "`r`n") { "`r`n" } else { "`n" }
-    $result = ($kept -join $newline)
-    if ($kept.Count -gt 0 -and $text.EndsWith("`n")) { $result += $newline }
-    [IO.File]::WriteAllText((Resolve-Path -LiteralPath $PROFILE).ProviderPath, $result, $encoding)
-    Write-Host "Removed from $PROFILE (backup: $backup)"
-}
+Uninstall-MxProfiles
 
 Write-Host '== Hooks'
 & (Join-Path $root 'hooks\uninstall.ps1')
 
 Write-Host '== Files'
-foreach ($item in 'bin', 'shell', 'hooks', 'preview', 'plugin.new', 'plugin.old', 'config.example.json', 'current-dir', 'trigger', 'MxDevKit.lplug4', 'HapticWeb.lplug4.part', 'haptic-web.new', 'uninstall.ps1') {
+foreach ($item in 'bin', 'shell', 'hooks', 'turns', 'preview', 'plugin.new', 'plugin.old', 'config.example.json', 'current-dir', 'current-terminal', 'trigger', 'MxDevKit.lplug4', 'HapticWeb.lplug4.part', 'haptic-web.new', 'uninstall.ps1') {
     Remove-Item (Join-Path $state $item) -Recurse -Force -ErrorAction SilentlyContinue
 }
 if ($Purge) {

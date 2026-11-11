@@ -1,6 +1,6 @@
-# MX Dev Kit: shell integration for zsh. Source it from ~/.zshrc.
+# MX Dev Kit: shell integration for zsh. Source it from ~/.zshrc (${ZDOTDIR}/.zshrc when ZDOTDIR is set).
 #
-#   - tells the MX Dev Kit plugin which folder you are working in
+#   - tells the MX Dev Kit plugin which folder and which terminal app you are working in
 #   - commands that run longer than MX_LONG_COMMAND_SECONDS vibrate when they end
 #   - buzz <command>        vibrates when the command ends, whatever its duration
 #   - ci-watch [sha]        waits for the GitHub Actions runs of a commit, vibrates at the end
@@ -23,6 +23,9 @@ typeset -g MX_LONG_COMMAND_IGNORE=${MX_LONG_COMMAND_IGNORE:-"vim nvim vi nano em
 mkdir -p "$MX_STATE_DIR" 2>/dev/null
 
 zmodload zsh/datetime
+
+# The terminal app, for the agent bubbles: TERM_PROGRAM, and the bundle id of the app (it survives tmux).
+typeset -g _mx_terminal="${TERM_PROGRAM-}"$'\t'"${__CFBundleIdentifier-}"
 
 # Non-blocking: the prompt never waits for the mouse.
 mx_haptic() {
@@ -83,6 +86,7 @@ _mx_precmd() {
 
   # Rewritten at every prompt: the plugin follows the last folder used.
   print -r -- "$PWD" >| "$MX_STATE_DIR/current-dir" 2>/dev/null
+  print -r -- "$_mx_terminal" >| "$MX_STATE_DIR/current-terminal" 2>/dev/null
 
   [[ -n $start && -z $buzzed ]] || return 0
   (( MX_LONG_COMMAND_SECONDS > 0 && EPOCHSECONDS - start >= MX_LONG_COMMAND_SECONDS )) || return 0

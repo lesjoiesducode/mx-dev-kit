@@ -14,7 +14,7 @@ fake="$work/fake"
 calls="$work/calls"
 mkdir -p "$fake" "$work/home"
 export HOME="$work/home" MX_TEST_CALLS="$calls"
-unset APPDATA MX_NOTIFY_WITH MX_HAPTIC_URL
+unset APPDATA MX_NOTIFY_WITH MX_HAPTIC_URL GEMINI_CLI_HOME CLAUDE_CONFIG_DIR CODEX_HOME COPILOT_HOME MX_TURN_SECONDS
 state="$HOME/.config/mx-dev-kit"
 mkdir -p "$state"
 
@@ -402,6 +402,46 @@ if [ "$(uname -s)" = Darwin ]; then
     printf 'skip  the installer questions (no python3)\n'
   fi
 
+  # The shell decides where the integration goes.
+  rm -f "$u/.zshrc"
+  mkdir -p "$u/.zdot"
+  # ZDOTDIR set in ~/.zshenv without export, as many dotfiles do: the installer asks zsh.
+  printf 'ZDOTDIR="%s/.zdot"\n' "$u" > "$u/.zshenv"
+  expect "install.sh with ZDOTDIR" 0 as_user sh "$root/install.sh" --only shell --no-haptic-web
+  if grep -q 'mx-dev-kit >>>' "$u/.zdot/.zshrc" 2>/dev/null && [ ! -e "$u/.zshrc" ]; then ok; else ko "ZDOTDIR: the line goes to \$ZDOTDIR/.zshrc" "$(cat "$work/out")"; fi
+  expect "uninstall.sh with ZDOTDIR" 0 as_user sh "$ustate/uninstall.sh" --purge
+  if grep -q 'mx-dev-kit' "$u/.zdot/.zshrc"; then ko "uninstall.sh removes it from \$ZDOTDIR/.zshrc"; else ok; fi
+  rm -rf "$u/.zshenv" "$u/.zdot"
+
+  expect "install.sh for bash, no profile yet" 0 as_user env SHELL=/bin/bash sh "$root/install.sh" --only shell --no-haptic-web
+  if grep -q 'mx.bash' "$u/.bash_profile" 2>/dev/null && [ ! -e "$u/.bashrc" ]; then ok; else ko "bash: the line goes to ~/.bash_profile, the file login bash reads" "$(cat "$work/out")"; fi
+  if [ -e "$u/.zshrc" ]; then ko "bash: ~/.zshrc is left alone"; else ok; fi
+  as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+  rm -f "$u/.bash_profile" "$u/.bash_profile".bak-*
+
+  printf '# my profile\n' > "$u/.profile"
+  expect "install.sh for bash with only ~/.profile" 0 as_user env SHELL=/bin/bash sh "$root/install.sh" --only shell --no-haptic-web
+  if grep -q 'BASH_VERSION' "$u/.profile" && [ ! -e "$u/.bash_profile" ]; then ok; else ko "bash: an existing ~/.profile gets the line, for bash only" "$(cat "$u/.profile")"; fi
+  as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+  if [ "$(cat "$u/.profile")" = "# my profile" ]; then ok; else ko "uninstall.sh restores ~/.profile" "$(cat "$u/.profile")"; fi
+  rm -f "$u/.profile" "$u/.profile".bak-*
+
+  ufish="$u/.config/fish/conf.d/mx-dev-kit.fish"
+  expect "install.sh for fish" 0 as_user env SHELL=/opt/homebrew/bin/fish sh "$root/install.sh" --only shell --no-haptic-web
+  if grep -qF "source \"$ustate/shell/mx.fish\"" "$ufish" 2>/dev/null && [ -f "$ustate/shell/mx.fish" ]; then ok; else ko "fish: a file of its own in conf.d" "$(cat "$work/out")"; fi
+  if [ -e "$u/.zshrc" ]; then ko "fish: ~/.zshrc is left alone"; else ok; fi
+  expect "install.sh for fish again" 0 as_user env SHELL=/opt/homebrew/bin/fish sh "$root/install.sh" --only shell --no-haptic-web
+  output_has "fish: nothing added twice" "Already in $ufish"
+  expect "uninstall.sh for fish" 0 as_user sh "$ustate/uninstall.sh" --purge
+  if [ -e "$ufish" ]; then ko "uninstall.sh deletes the fish file"; else ok; fi
+
+  expect "install.sh with a shell it does not know" 0 as_user env SHELL=/opt/homebrew/bin/nu sh "$root/install.sh" --only shell --no-haptic-web
+  output_has "an unknown shell is named" "Your shell is nu: MX Dev Kit has no integration for it, nothing was added."
+  output_has "the line to add by hand is given" ". \"$ustate/shell/mx.zsh\""
+  if grep -q 'Added' "$work/out"; then ko "an unknown shell never reads Added" "$(cat "$work/out")"; else ok; fi
+  if [ -e "$u/.zshrc" ] || [ -e "$u/.bash_profile" ] || [ -e "$ufish" ]; then ko "an unknown shell gets nothing written"; else ok; fi
+  as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+
   # Ring Dev Kit, the former name: its uninstaller runs and the settings move over.
   legacy="$u/.config/actions-ring-dev-kit"
   mkdir -p "$legacy"
@@ -466,7 +506,7 @@ cfile="$h/.copilot/hooks/mx-dev-kit.json"
 
 expect "hooks/install.sh --copilot" 0 run_copilot "$root/hooks/install.sh" --copilot
 if [ -f "$cfile" ]; then ok; else ko "hooks/install.sh --copilot writes ~/.copilot/hooks/mx-dev-kit.json"; fi
-for event in agentStop notification errorOccurred; do
+for event in userPromptSubmitted agentStop notification errorOccurred; do
   if grep -qF "agent-haptics.sh' copilot $event\"" "$cfile"; then ok; else ko "Copilot hook file has $event" "$(cat "$cfile")"; fi
 done
 if grep -q '"version": 1' "$cfile"; then ok; else ko "Copilot hook file has version 1"; fi
@@ -500,6 +540,59 @@ check_wave "Copilot background agent idle is silent" notification '{"notificatio
 check_wave "Copilot shell completed is silent" notification '{"notification_type":"shell_completed"}' ""
 check_wave "Copilot fatal error plays angry_alert" errorOccurred '{"error":{"message":"x"},"errorContext":"model_call","recoverable":false}' angry_alert
 check_wave "Copilot recoverable error is silent" errorOccurred '{"error":{"message":"x"},"errorContext":"model_call","recoverable": true}' ""
+
+# agent-haptics.sh: the end of a turn vibrates only after MX_TURN_SECONDS.
+hook_wave() {
+  : > "$calls"
+  printf '%s' "$3" | env -u CLAUDE_CODE_ENTRYPOINT MX_HAPTIC_URL=https://local.jmw.nz:41443/haptic ${4:+MX_TURN_SECONDS=$4} sh "$ah" "$1" "$2" > "$work/out" 2>&1
+  i=0
+  while [ ! -s "$calls" ] && [ $i -lt 10 ]; do sleep 0.05; i=$((i + 1)); done
+  sed -n 's|.*/haptic/\([a-z_]*\)$|\1|p' "$calls" | head -n 1
+}
+check_turn() {
+  got=$(hook_wave "$2" "$3" "$4" "${6:-}")
+  if [ "$got" = "$5" ]; then ok; else ko "$1 (got '${got}', expected '$5')" "$(cat "$calls")"; fi
+}
+turns="$state/turns"
+check_turn "the start of a turn is silent" claude UserPromptSubmit '{"session_id":"t-1","prompt":"hi"}' ""
+if [ -f "$turns/claude-t-1" ]; then ok; else ko "the start of a turn is noted" "$(ls "$turns" 2>&1)"; fi
+check_turn "a short turn ends silently" claude Stop '{"session_id":"t-1"}' ""
+check_turn "a permission always knocks" claude Notification '{"session_id":"t-1","notification_type":"permission_prompt"}' knock
+check_turn "a failed turn always vibrates" claude StopFailure '{"session_id":"t-1"}' angry_alert
+check_turn "MX_TURN_SECONDS=0 vibrates at every turn" claude Stop '{"session_id":"t-1"}' completed 0
+echo $(($(date +%s) - 45)) > "$turns/claude-t-1"
+check_turn "a turn of 30 seconds or more vibrates" claude Stop '{"session_id":"t-1"}' completed
+check_turn "a turn whose start is unknown vibrates" claude Stop '{"session_id":"t-2"}' completed
+check_turn "Gemini BeforeAgent notes the start" gemini BeforeAgent '{"session_id":"g-1"}' ""
+output_has "Gemini BeforeAgent answers {}" "{}"
+check_turn "a short Gemini turn ends silently" gemini AfterAgent '{"session_id":"g-1"}' ""
+check_turn "Codex UserPromptSubmit notes the start" codex UserPromptSubmit '{"session_id":"c-1"}' ""
+check_turn "a short Codex turn ends silently" codex Stop '{"session_id":"c-1"}' ""
+check_turn "Copilot turns are told apart by folder" copilot userPromptSubmitted '{"timestamp":1,"cwd":"/work/api","prompt":"x"}' ""
+check_turn "a short Copilot turn ends silently" copilot agentStop '{"timestamp":2,"cwd":"/work/api"}' ""
+check_turn "another Copilot folder vibrates" copilot agentStop '{"timestamp":2,"cwd":"/work/web"}' completed
+rm -rf "$turns"
+
+# --- fish integration -------------------------------------------------------------
+
+fish_bin=$(command -v fish 2>/dev/null || true)
+if [ -n "$fish_bin" ] && command -v python3 >/dev/null 2>&1; then
+  fh="$work/fish-home"
+  mkdir -p "$fh/.config/fish"
+  printf 'set -g MX_LONG_COMMAND_SECONDS 1\nsource "%s"\n' "$root/shell/mx.fish" > "$fh/.config/fish/config.fish"
+  : > "$calls"
+  env -i HOME="$fh" PATH="$fake:/usr/bin:/bin" MX_TEST_CALLS="$calls" TERM=xterm-256color TERM_PROGRAM=ghostty __CFBundleIdentifier=com.mitchellh.ghostty \
+    python3 -I "$root/tests/shell/type.py" 2.2 'sleep 1.3; false' 'sleep 1.3' 'ls >/dev/null' 'tail -n 1 /dev/null; sleep 1.3' 'buzz true' -- "$fish_bin" -i > /dev/null 2>&1
+  sleep 0.5
+  fwaves=$(sed -n 's|.*/haptic/\([a-z_]*\)$|\1|p' "$calls" | tr '\n' ' ')
+  # The failing long command, the long one, buzz. Not ls (short), not tail (ignored).
+  if [ "$fwaves" = "angry_alert completed completed " ]; then ok; else ko "fish: long commands and buzz vibrate (got: $fwaves)" "$(cat "$calls")"; fi
+  if grep -q -- '--resolve|local.jmw.nz:41443:127.0.0.1' "$calls"; then ok; else ko "fish: no DNS for the vibrations" "$(cat "$calls")"; fi
+  if [ "$(cat "$fh/.config/mx-dev-kit/current-terminal" 2>/dev/null)" = "$(printf 'ghostty\tcom.mitchellh.ghostty')" ]; then ok; else ko "fish: the terminal is written at each prompt"; fi
+  if [ -s "$fh/.config/mx-dev-kit/current-dir" ]; then ok; else ko "fish: the folder is written at each prompt"; fi
+else
+  printf 'skip  the fish integration (fish not installed)\n'
+fi
 
 # --- summary ------------------------------------------------------------------
 

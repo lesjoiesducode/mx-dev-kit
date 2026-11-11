@@ -14,10 +14,20 @@
 #   agent-haptics.sh copilot notification  permission or question  knock
 #   agent-haptics.sh copilot errorOccurred error it cannot recover angry_alert
 #
+# The end of a turn vibrates only when the turn lasted MX_TURN_SECONDS (30) or more: a quick answer
+# while you are watching stays silent. The start of the turn is noted by these events:
+#
+#   agent-haptics.sh claude UserPromptSubmit     agent-haptics.sh gemini BeforeAgent
+#   agent-haptics.sh codex UserPromptSubmit      agent-haptics.sh copilot userPromptSubmitted
+#
+# Waiting for you (knock) and failures (angry_alert) always vibrate, and so does a turn whose
+# start is unknown.
+#
 # Hooks get the event as JSON on stdin. Codex's older `notify` program gets it as the
 # last argument instead, {"type":"agent-turn-complete",...}, with nothing on stdin.
 #
 # Environment:
+#   MX_TURN_SECONDS=30          shortest turn that vibrates when it ends, 0 for every turn
 #   MX_WAVE_DONE, MX_WAVE_ATTENTION, MX_WAVE_ERROR   other waveforms
 #   MX_IDLE_REMINDER=1          also knock when Claude Code has been idle for a minute
 #   MX_HAPTICS_ALL_SESSIONS=1   also vibrate for headless runs (claude -p, Agent SDK)
@@ -42,6 +52,28 @@ done_() {
 
 [ -e "$state/haptics.off" ] && done_
 
+# One file per session, holding the time its turn started.
+json_text() { printf '%s' "$input" | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n 1; }
+turn_file() {
+  id=$(json_text session_id)
+  [ -n "$id" ] || id=$(json_text sessionId)
+  if [ -z "$id" ]; then
+    cwd=$(json_text cwd)
+    [ -z "$cwd" ] || id=cwd-$(printf '%s' "$cwd" | cksum | awk '{ print $1 }')
+  fi
+  printf '%s/turns/%s-%s' "$state" "$agent" "$(printf '%s' "${id:-default}" | tr -c 'A-Za-z0-9_.-' '_')"
+}
+
+# True when the turn that just ended was shorter than MX_TURN_SECONDS.
+short_turn() {
+  min=${MX_TURN_SECONDS:-30}
+  case $min in '' | *[!0-9]*) min=30 ;; esac
+  [ "$min" -gt 0 ] || return 1
+  start=$(cat "$(turn_file)" 2>/dev/null) || return 1
+  case $start in '' | *[!0-9]*) return 1 ;; esac
+  [ $(($(date +%s) - start)) -lt "$min" ]
+}
+
 if [ "$agent" = codex ]; then
   case $event in
     "{"*)
@@ -52,7 +84,15 @@ if [ "$agent" = codex ]; then
 fi
 
 case "$agent:$event" in
+  claude:UserPromptSubmit | gemini:BeforeAgent | codex:UserPromptSubmit | copilot:userPromptSubmitted)
+    mkdir -p "$state/turns" 2>/dev/null
+    date +%s > "$(turn_file)" 2>/dev/null
+    # Sessions that ended long ago.
+    find "$state/turns" -type f -mtime +1 -exec rm -f {} + 2>/dev/null
+    done_
+    ;;
   claude:Stop | gemini:AfterAgent | codex:Stop | codex:notify:agent-turn-complete)
+    short_turn && done_
     wave=${MX_WAVE_DONE:-completed}
     ;;
   claude:Notification | gemini:Notification)
@@ -67,6 +107,7 @@ case "$agent:$event" in
     wave=${MX_WAVE_ATTENTION:-knock}
     ;;
   copilot:agentStop)
+    short_turn && done_
     wave=${MX_WAVE_DONE:-completed}
     ;;
   copilot:notification)

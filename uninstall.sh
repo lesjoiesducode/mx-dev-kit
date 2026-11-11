@@ -46,7 +46,18 @@ if [ -d "$plugins/HapticWeb" ]; then
 fi
 
 echo "== Shell"
-for rc in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_profile"; do
+# Every profile the installer may have written to, whatever the shell is today.
+zdot=${ZDOTDIR:-}
+if [ -z "$zdot" ] && command -v zsh >/dev/null 2>&1; then
+  zdot=$(zsh -c 'printf "%s\n" "${ZDOTDIR:-}"' </dev/null 2>/dev/null | tail -n 1)
+fi
+[ -n "$zdot" ] && [ -d "$zdot" ] || zdot=$HOME
+fish_file="${XDG_CONFIG_HOME:-$HOME/.config}/fish/conf.d/mx-dev-kit.fish"
+if [ -f "$fish_file" ] && grep -q '>>> mx-dev-kit >>>' "$fish_file"; then
+  rm -f "$fish_file"
+  echo "Removed $fish_file"
+fi
+for rc in "$zdot/.zshrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile" "$HOME/.bashrc"; do
   [ -e "$rc" ] && grep -q '>>> mx-dev-kit >>>' "$rc" || continue
   backup="$rc.bak-$(date +%Y%m%d-%H%M%S)"
   n=1
@@ -68,9 +79,14 @@ done
 echo "== Hooks"
 sh "$root/hooks/uninstall.sh" || echo "Remove the agent-haptics entries from ~/.claude/settings.json, ~/.gemini/settings.json and ~/.codex/hooks.json, and delete ~/.copilot/hooks/mx-dev-kit.json, by hand."
 
+# The tab config the agent bubbles write for Warp.
+warp_config="$HOME/.warp/tab_configs/mx_dev_kit_agent.toml"
+[ ! -f "$warp_config" ] || { rm -f "$warp_config"; echo "Removed $warp_config"; }
+
 echo "== Files"
 rm -rf "$state/bin" "$state/shell" "$state/hooks" "$state/preview" "$state/plugin.new" "$state/plugin.old" "$state/haptic-web.new"
-rm -f "$state/config.example.json" "$state/current-dir" "$state/trigger" "$state/MxDevKit.lplug4" "$state/HapticWeb.lplug4.part" "$state/uninstall.sh"
+rm -rf "$state/turns"
+rm -f "$state/config.example.json" "$state/current-dir" "$state/current-terminal" "$state/trigger" "$state/MxDevKit.lplug4" "$state/HapticWeb.lplug4.part" "$state/uninstall.sh"
 if [ "$purge" = 1 ]; then
   rm -f "$state/config.json" "$state/haptics.off" "$state/notifications.off"
   rmdir "$state" 2>/dev/null || echo "Left $state (it still holds files you added)."

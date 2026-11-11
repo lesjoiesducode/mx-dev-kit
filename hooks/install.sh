@@ -17,7 +17,7 @@ set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 state="$HOME/.config/mx-dev-kit"
 claude_dir=${CLAUDE_CONFIG_DIR:-$HOME/.claude}
-gemini_dir="$HOME/.gemini"
+gemini_dir="${GEMINI_CLI_HOME:-$HOME}/.gemini"
 codex_dir=${CODEX_HOME:-$HOME/.codex}
 copilot_dir=${COPILOT_HOME:-$HOME/.copilot}
 
@@ -66,16 +66,19 @@ cmd() { json_string "$quoted_hook $1 $2"; }
 entries_for() {
   case $1 in
     claude)
-      printf '{"Stop":[{"hooks":[{"type":"command","command":%s,"timeout":5}]}],' "$(cmd claude Stop)"
+      printf '{"UserPromptSubmit":[{"hooks":[{"type":"command","command":%s,"timeout":5}]}],' "$(cmd claude UserPromptSubmit)"
+      printf '"Stop":[{"hooks":[{"type":"command","command":%s,"timeout":5}]}],' "$(cmd claude Stop)"
       printf '"Notification":[{"hooks":[{"type":"command","command":%s,"timeout":5}]}],' "$(cmd claude Notification)"
       printf '"StopFailure":[{"hooks":[{"type":"command","command":%s,"timeout":5}]}]}' "$(cmd claude StopFailure)"
       ;;
     gemini)
-      printf '{"AfterAgent":[{"hooks":[{"name":"mx-dev-kit-haptics","type":"command","command":%s,"timeout":5000}]}],' "$(cmd gemini AfterAgent)"
+      printf '{"BeforeAgent":[{"hooks":[{"name":"mx-dev-kit-haptics","type":"command","command":%s,"timeout":5000}]}],' "$(cmd gemini BeforeAgent)"
+      printf '"AfterAgent":[{"hooks":[{"name":"mx-dev-kit-haptics","type":"command","command":%s,"timeout":5000}]}],' "$(cmd gemini AfterAgent)"
       printf '"Notification":[{"hooks":[{"name":"mx-dev-kit-haptics","type":"command","command":%s,"timeout":5000}]}]}' "$(cmd gemini Notification)"
       ;;
     codex)
-      printf '{"Stop":[{"hooks":[{"type":"command","command":%s,"timeout":5}]}],' "$(cmd codex Stop)"
+      printf '{"UserPromptSubmit":[{"hooks":[{"type":"command","command":%s,"timeout":5}]}],' "$(cmd codex UserPromptSubmit)"
+      printf '"Stop":[{"hooks":[{"type":"command","command":%s,"timeout":5}]}],' "$(cmd codex Stop)"
       printf '"PermissionRequest":[{"hooks":[{"type":"command","command":%s,"timeout":5}]}]}' "$(cmd codex PermissionRequest)"
       ;;
   esac
@@ -93,6 +96,7 @@ backup_name() {
 # Notification fires for more than the prompts that wait for you; the script keeps those.
 copilot_file() {
   printf '{\n  "version": 1,\n  "hooks": {\n'
+  printf '    "userPromptSubmitted": [{ "type": "command", "bash": %s, "timeoutSec": 5 }],\n' "$(cmd copilot userPromptSubmitted)"
   printf '    "agentStop": [{ "type": "command", "bash": %s, "timeoutSec": 5 }],\n' "$(cmd copilot agentStop)"
   printf '    "notification": [{ "type": "command", "bash": %s, "timeoutSec": 5 }],\n' "$(cmd copilot notification)"
   printf '    "errorOccurred": [{ "type": "command", "bash": %s, "timeoutSec": 5 }]\n' "$(cmd copilot errorOccurred)"

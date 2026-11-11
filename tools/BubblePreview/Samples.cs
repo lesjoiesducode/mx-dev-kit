@@ -14,7 +14,7 @@ internal static class Samples
         Repo = "acme/acme-api",
         Issues = 7,
         PullRequests = 2,
-        Ci = new CiRun(CiState.Failed, 1, null),
+        Ci = new CiRun(CiState.Failed, "c1", null),
         AuditDir = "/work/acme-api",
         Vulnerabilities = 5,
         Changes = 3,
@@ -30,7 +30,7 @@ internal static class Samples
         Repo = "acme/web-app",
         Issues = 3,
         PullRequests = 1,
-        Ci = new CiRun(CiState.Passed, 2, null),
+        Ci = new CiRun(CiState.Passed, "c2", null),
         AuditDir = "/work/web-app",
         Vulnerabilities = 0,
         Changes = 0,
@@ -49,7 +49,7 @@ internal static class Samples
         yield return ("pull-requests", Bubbles.PullRequests(Api, En));
         yield return ("ci-passed", Bubbles.Ci(Web, En));
         yield return ("ci-failed", Bubbles.Ci(Api, En));
-        yield return ("ci-running", Bubbles.Ci(Api with { Ci = new CiRun(CiState.Running, 3, null) }, En));
+        yield return ("ci-running", Bubbles.Ci(Api with { Ci = new CiRun(CiState.Running, "c3", null) }, En));
         yield return ("audit", Bubbles.Audit(Api, En));
         yield return ("audit-clean", Bubbles.Audit(Web, En));
         yield return ("commit", Bubbles.Commit(Api, En, Now));
