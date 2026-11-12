@@ -245,7 +245,7 @@ La logique vit dans `src/MxDevKit.Core`, avec ses tests. `src/MxDevKitPlugin` es
 
 ## Crédits et licence
 
-Construit sur le [Logi Actions SDK](https://logitech.github.io/actions-sdk-docs/). Les vibrations des scripts passent par le [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) de Jasper M-W, licence MIT. Les installeurs le téléchargent depuis ses propres releases ; il ne fait pas partie de ce dépôt. Les logos des agents viennent de [Simple Icons](https://simpleicons.org) (Claude ; GitHub Copilot vient des [Primer octicons](https://primer.style/octicons) de GitHub) et de [Lobe Icons](https://github.com/lobehub/lobe-icons) (Codex, Gemini).
+Construit sur le [Logi Actions SDK](https://logitech.github.io/actions-sdk-docs/). Les vibrations des scripts passent par le [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) de Jasper M-W, licence MIT. Les installeurs le téléchargent depuis ses propres releases ; il ne fait pas partie de ce dépôt. Les pictogrammes des bulles sont les [Primer octicons](https://primer.style/octicons) de GitHub, licence MIT. Les logos des agents viennent de [Simple Icons](https://simpleicons.org) (Claude ; GitHub Copilot vient des [Primer octicons](https://primer.style/octicons) de GitHub) et de [Lobe Icons](https://github.com/lobehub/lobe-icons) (Codex, Gemini).
 
 Logitech, Logi, MX Master, Logi Options+ et Actions Ring sont des marques de Logitech. Claude et Claude Code sont des marques d'Anthropic, Codex d'OpenAI, Gemini de Google, GitHub Copilot de GitHub. Leurs logos servent uniquement à désigner l'outil que lance chaque bulle.
 

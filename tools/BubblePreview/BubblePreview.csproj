@@ -17,6 +17,7 @@
     <Compile Include="..\..\src\MxDevKit.Core\**\*.cs" Exclude="..\..\src\MxDevKit.Core\bin\**;..\..\src\MxDevKit.Core\obj\**" LinkBase="Core" />
     <Compile Include="..\..\src\MxDevKitPlugin\BubblePainter.cs" Link="BubblePainter.cs" />
     <Compile Include="..\..\src\MxDevKitPlugin\AgentLogos.cs" Link="AgentLogos.cs" />
+    <Compile Include="..\..\src\MxDevKitPlugin\Octicons.cs" Link="Octicons.cs" />
     <Using Include="MxDevKit" />
     <Using Include="Loupedeck" />
   </ItemGroup>

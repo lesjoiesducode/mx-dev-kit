@@ -49,14 +49,14 @@ public static class BubblePainter
 
         if (bubble.Glyph != Glyph.None)
         {
-            DrawGlyph(b, bubble.Glyph, w / 2f, h * 0.29f, s * 0.1f, stroke2);
+            DrawGlyph(b, bubble.Glyph, w / 2f, h * 0.24f, s * 0.1f, stroke2);
         }
 
         // Numbers very big, short words a bit less, longer words smaller still.
         var value = bubble.Value;
         var number = char.IsDigit(value[0]);
         var size = number && value.Length <= 2 ? s * 0.36 : value.Length <= 4 ? s * 0.26 : value.Length <= 9 ? s * 0.19 : s * 0.16;
-        b.DrawText(value, 0, (int)(h * 0.45), w, (int)(h * 0.42), White, (int)size);
+        b.DrawText(value, 0, (int)(h * 0.48), w, (int)(h * 0.42), White, (int)size);
     }
 
     // The agent's mark, big in the middle, or small above a word ("Install").
@@ -118,9 +118,26 @@ public static class BubblePainter
         }
     }
 
-    // Line pictograms in the spirit of GitHub's octicons. (cx, cy): centre, r: half size, t: stroke.
+    // A pictogram: the octicon, or the same shape in lines if Skia cannot read the SVG.
+    // (cx, cy): centre, r: half size, t: stroke of the lines.
     public static void DrawGlyph(BitmapBuilder b, Glyph glyph, float cx, float cy, float r, float t)
     {
+        var px = Math.Max(1, (int)MathF.Round(r * 2.4f));
+        if (Octicons.Image(glyph, px) is { } image)
+        {
+            b.DrawImage(image, (int)MathF.Round(cx - px / 2f), (int)MathF.Round(cy - px / 2f), px, px);
+            return;
+        }
+
+        DrawLineGlyph(b, glyph, cx, cy, r, t);
+    }
+
+    private static void DrawLineGlyph(BitmapBuilder b, Glyph glyph, float cx, float cy, float r, float t)
+    {
+        // Circles are drawn on whole pixels: a fractional centre would leave the lines of a glyph
+        // a pixel away from its circles in the small images the ring asks for.
+        cx = MathF.Round(cx);
+        cy = MathF.Round(cy);
         var c = White;
         switch (glyph)
         {

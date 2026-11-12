@@ -243,7 +243,7 @@ The logic lives in `src/MxDevKit.Core`, with its tests. `src/MxDevKitPlugin` is 
 
 ## Credits and license
 
-Built on the [Logi Actions SDK](https://logitech.github.io/actions-sdk-docs/). Script vibrations go through the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W, MIT license. The installers download it from its own releases; it is not part of this repository. The agent marks come from [Simple Icons](https://simpleicons.org) (Claude, GitHub Copilot from GitHub's [Primer octicons](https://primer.style/octicons)) and [Lobe Icons](https://github.com/lobehub/lobe-icons) (Codex, Gemini).
+Built on the [Logi Actions SDK](https://logitech.github.io/actions-sdk-docs/). Script vibrations go through the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W, MIT license. The installers download it from its own releases; it is not part of this repository. The pictograms of the bubbles are GitHub's [Primer octicons](https://primer.style/octicons), MIT license. The agent marks come from [Simple Icons](https://simpleicons.org) (Claude, GitHub Copilot from GitHub's [Primer octicons](https://primer.style/octicons)) and [Lobe Icons](https://github.com/lobehub/lobe-icons) (Codex, Gemini).
 
 Logitech, Logi, MX Master, Logi Options+ and Actions Ring are trademarks of Logitech. Claude and Claude Code are trademarks of Anthropic, Codex of OpenAI, Gemini of Google, GitHub Copilot of GitHub. Their marks only name the tool each bubble starts.
 
