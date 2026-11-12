@@ -125,25 +125,26 @@ Les bulles se mettent à jour toutes seules. GitHub est interrogé toutes les 60
 
 ![Deux Actions Rings dessinés par le plugin. À gauche : la bulle Claude Code et un projet avec une CI en échec, 7 issues, 2 pull requests, 5 failles, 3 fichiers modifiés et 2 commits à pousser. À droite : la bulle d'agent générique et un autre projet avec une CI au vert, un minuteur focus en cours et 2 revues demandées.](docs/img/hero.png)
 
-| | Bulle | Affiche | Clic |
-|---|---|---|---|
-| <img src="docs/img/bubbles/project.png" width="64" alt=""> | Projet | Dépôt et branche | Ouvre le dépôt sur GitHub, sinon le dossier |
-| <img src="docs/img/bubbles/issues.png" width="64" alt=""> | Issues du projet | Issues ouvertes | Ouvre la liste |
-| <img src="docs/img/bubbles/pull-requests.png" width="64" alt=""> | PR du projet | Pull requests ouvertes | Ouvre la liste |
-| <img src="docs/img/bubbles/ci-failed.png" width="64" alt=""> | CI du projet | Tous les checks du dernier commit de la branche : tous les workflows, et les services qui publient leur statut sur GitHub (Vercel, Netlify, CircleCI...). Rouge dès qu'un seul échoue, vibre à la fin | Ouvre celui en échec, ou le run |
-| <img src="docs/img/bubbles/audit.png" width="64" alt=""> | Failles du projet | Failles de gravité high et critical par défaut | Relance l'analyse |
-| <img src="docs/img/bubbles/commit.png" width="64" alt=""> | Commit du projet | Fichiers modifiés | `git add -A` et commit, avec des [garde-fous](#garde-fous-du-commit) |
-| <img src="docs/img/bubbles/push.png" width="64" alt=""> | Push du projet | Commits à pousser | `git push`, publie une nouvelle branche |
-| <img src="docs/img/bubbles/pull.png" width="64" alt=""> | Pull du projet | Commits à récupérer | `git pull --ff-only` |
-| <img src="docs/img/bubbles/claude.png" width="64" alt=""> | Claude Code | | Lance `claude` dans un terminal, dans le projet |
-| <img src="docs/img/bubbles/codex.png" width="64" alt=""> | Codex | | Lance `codex` |
-| <img src="docs/img/bubbles/gemini.png" width="64" alt=""> | Gemini CLI | | Lance `gemini` |
-| <img src="docs/img/bubbles/copilot.png" width="64" alt=""> | Copilot CLI | | Lance `copilot` |
-| <img src="docs/img/bubbles/agent-missing.png" width="64" alt=""> | | L'agent n'est pas installé | Ouvre sa page d'installation |
-| <img src="docs/img/bubbles/agent.png" width="64" alt=""> | Agent dans le projet | | Lance `agent.command` (`claude` par défaut), pour tout autre agent ou outil |
-| <img src="docs/img/bubbles/reviews.png" width="64" alt=""> | Revues demandées | Pull requests qui attendent votre revue | Les ouvre |
-| <img src="docs/img/bubbles/inbox.png" width="64" alt=""> | Boîte GitHub | Dernier événement GitHub qui vous concerne | L'ouvre |
-| <img src="docs/img/bubbles/focus-running.png" width="64" alt=""> | Minuteur focus | Temps restant | Lance ou arrête |
+<table>
+<tr><th></th><th>Bulle</th><th>Affiche</th><th>Clic</th></tr>
+<tr><td width="92"><img src="docs/img/bubbles/project.png" width="64" height="64" alt=""></td><td>Projet</td><td>Dépôt et branche</td><td>Ouvre le dépôt sur GitHub, sinon le dossier</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/issues.png" width="64" height="64" alt=""></td><td>Issues du projet</td><td>Issues ouvertes</td><td>Ouvre la liste</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/pull-requests.png" width="64" height="64" alt=""></td><td>PR du projet</td><td>Pull requests ouvertes</td><td>Ouvre la liste</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/ci-failed.png" width="64" height="64" alt=""></td><td>CI du projet</td><td>Tous les checks du dernier commit de la branche : tous les workflows, et les services qui publient leur statut sur GitHub (Vercel, Netlify, CircleCI...). Rouge dès qu'un seul échoue, vibre à la fin</td><td>Ouvre celui en échec, ou le run</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/audit.png" width="64" height="64" alt=""></td><td>Failles du projet</td><td>Failles de gravité high et critical par défaut</td><td>Relance l'analyse</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/commit.png" width="64" height="64" alt=""></td><td>Commit du projet</td><td>Fichiers modifiés</td><td><code>git add -A</code> et commit, avec des <a href="#garde-fous-du-commit">garde-fous</a></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/push.png" width="64" height="64" alt=""></td><td>Push du projet</td><td>Commits à pousser</td><td><code>git push</code>, publie une nouvelle branche</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/pull.png" width="64" height="64" alt=""></td><td>Pull du projet</td><td>Commits à récupérer</td><td><code>git pull --ff-only</code></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/claude.png" width="64" height="64" alt=""></td><td>Claude Code</td><td></td><td>Lance <code>claude</code> dans un terminal, dans le projet</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/codex.png" width="64" height="64" alt=""></td><td>Codex</td><td></td><td>Lance <code>codex</code></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/gemini.png" width="64" height="64" alt=""></td><td>Gemini CLI</td><td></td><td>Lance <code>gemini</code></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/copilot.png" width="64" height="64" alt=""></td><td>Copilot CLI</td><td></td><td>Lance <code>copilot</code></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/agent-missing.png" width="64" height="64" alt=""></td><td></td><td>L'agent n'est pas installé</td><td>Ouvre sa page d'installation</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/agent.png" width="64" height="64" alt=""></td><td>Agent dans le projet</td><td></td><td>Lance <code>agent.command</code> (<code>claude</code> par défaut), pour tout autre agent ou outil</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/reviews.png" width="64" height="64" alt=""></td><td>Revues demandées</td><td>Pull requests qui attendent votre revue</td><td>Les ouvre</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/inbox.png" width="64" height="64" alt=""></td><td>Boîte GitHub</td><td>Dernier événement GitHub qui vous concerne</td><td>L'ouvre</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/focus-running.png" width="64" height="64" alt=""></td><td>Minuteur focus</td><td>Temps restant</td><td>Lance ou arrête</td></tr>
+</table>
 
 Les noms sont ceux qu'affiche Options+ quand le plugin est en français ; les images ci-dessus sont celles de la version anglaise.
 

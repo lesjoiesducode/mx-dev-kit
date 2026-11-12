@@ -125,25 +125,26 @@ The bubbles refresh on their own. GitHub is polled every 60 seconds, every 15 wh
 
 ![Two Actions Rings drawn by the plugin. Left: the Claude Code bubble and a project with a failed CI, 7 issues, 2 pull requests, 5 vulnerabilities, 3 changed files and 2 commits to push. Right: the generic agent bubble and another project with a green CI, a focus timer running and 2 review requests.](docs/img/hero.png)
 
-| | Bubble | Shows | Click |
-|---|---|---|---|
-| <img src="docs/img/bubbles/project.png" width="64" alt=""> | Project | Repository and branch | Opens it on GitHub, or the folder |
-| <img src="docs/img/bubbles/issues.png" width="64" alt=""> | Issues | Open issues | Opens the list |
-| <img src="docs/img/bubbles/pull-requests.png" width="64" alt=""> | Pull requests | Open pull requests | Opens the list |
-| <img src="docs/img/bubbles/ci-failed.png" width="64" alt=""> | CI status | Every check of the latest commit of the branch: all workflows, and the services that report to GitHub (Vercel, Netlify, CircleCI...). Red as soon as one fails, vibrates when they end | Opens the failing one, or the run |
-| <img src="docs/img/bubbles/audit.png" width="64" alt=""> | Vulnerabilities | High and critical advisories by default | Scans again |
-| <img src="docs/img/bubbles/commit.png" width="64" alt=""> | Commit all changes | Changed files | `git add -A` and commit, with [safeguards](#commit-safeguards) |
-| <img src="docs/img/bubbles/push.png" width="64" alt=""> | Push | Commits to push | `git push`, publishes a new branch |
-| <img src="docs/img/bubbles/pull.png" width="64" alt=""> | Pull | Commits to pull | `git pull --ff-only` |
-| <img src="docs/img/bubbles/claude.png" width="64" alt=""> | Claude Code | | Starts `claude` in a terminal, in the project |
-| <img src="docs/img/bubbles/codex.png" width="64" alt=""> | Codex | | Starts `codex` |
-| <img src="docs/img/bubbles/gemini.png" width="64" alt=""> | Gemini CLI | | Starts `gemini` |
-| <img src="docs/img/bubbles/copilot.png" width="64" alt=""> | Copilot CLI | | Starts `copilot` |
-| <img src="docs/img/bubbles/agent-missing.png" width="64" alt=""> | | The agent is not installed | Opens its install page |
-| <img src="docs/img/bubbles/agent.png" width="64" alt=""> | Agent in project | | Starts `agent.command` (`claude` by default), for any other agent or tool |
-| <img src="docs/img/bubbles/reviews.png" width="64" alt=""> | Review requests | Pull requests waiting for your review | Opens them |
-| <img src="docs/img/bubbles/inbox.png" width="64" alt=""> | GitHub inbox | Last GitHub event for you | Opens it |
-| <img src="docs/img/bubbles/focus-running.png" width="64" alt=""> | Focus timer | Time left | Starts or stops |
+<table>
+<tr><th></th><th>Bubble</th><th>Shows</th><th>Click</th></tr>
+<tr><td width="92"><img src="docs/img/bubbles/project.png" width="64" height="64" alt=""></td><td>Project</td><td>Repository and branch</td><td>Opens it on GitHub, or the folder</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/issues.png" width="64" height="64" alt=""></td><td>Issues</td><td>Open issues</td><td>Opens the list</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/pull-requests.png" width="64" height="64" alt=""></td><td>Pull requests</td><td>Open pull requests</td><td>Opens the list</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/ci-failed.png" width="64" height="64" alt=""></td><td>CI status</td><td>Every check of the latest commit of the branch: all workflows, and the services that report to GitHub (Vercel, Netlify, CircleCI...). Red as soon as one fails, vibrates when they end</td><td>Opens the failing one, or the run</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/audit.png" width="64" height="64" alt=""></td><td>Vulnerabilities</td><td>High and critical advisories by default</td><td>Scans again</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/commit.png" width="64" height="64" alt=""></td><td>Commit all changes</td><td>Changed files</td><td><code>git add -A</code> and commit, with <a href="#commit-safeguards">safeguards</a></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/push.png" width="64" height="64" alt=""></td><td>Push</td><td>Commits to push</td><td><code>git push</code>, publishes a new branch</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/pull.png" width="64" height="64" alt=""></td><td>Pull</td><td>Commits to pull</td><td><code>git pull --ff-only</code></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/claude.png" width="64" height="64" alt=""></td><td>Claude Code</td><td></td><td>Starts <code>claude</code> in a terminal, in the project</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/codex.png" width="64" height="64" alt=""></td><td>Codex</td><td></td><td>Starts <code>codex</code></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/gemini.png" width="64" height="64" alt=""></td><td>Gemini CLI</td><td></td><td>Starts <code>gemini</code></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/copilot.png" width="64" height="64" alt=""></td><td>Copilot CLI</td><td></td><td>Starts <code>copilot</code></td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/agent-missing.png" width="64" height="64" alt=""></td><td></td><td>The agent is not installed</td><td>Opens its install page</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/agent.png" width="64" height="64" alt=""></td><td>Agent in project</td><td></td><td>Starts <code>agent.command</code> (<code>claude</code> by default), for any other agent or tool</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/reviews.png" width="64" height="64" alt=""></td><td>Review requests</td><td>Pull requests waiting for your review</td><td>Opens them</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/inbox.png" width="64" height="64" alt=""></td><td>GitHub inbox</td><td>Last GitHub event for you</td><td>Opens it</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/focus-running.png" width="64" height="64" alt=""></td><td>Focus timer</td><td>Time left</td><td>Starts or stops</td></tr>
+</table>
 
 To try a bubble without the mouse, write its name to the trigger file: `echo commit > ~/.config/mx-dev-kit/trigger`. It also takes `push`, `pull`, `agent`, `claude`, `codex`, `gemini`, `copilot`, `audit`, `focus`, `inbox`, `notify` and `inbox-test`.
 
