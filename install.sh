@@ -478,7 +478,7 @@ fi
 if [ "$plugin" = 1 ]; then
   n=$((n + 1))
   say "$n. Logi Options+ > your device > Actions Ring: drag actions from \"MX Dev Kit\" onto the ring."
-  say "   A bubble shows only its name at first: edit its icon once and reset it to see the live image."
+  say "   If a bubble shows only its name, edit its icon once and reset it to see the live image."
 fi
 say "$((n + 1)). Optional tools, each for its own feature: gh (GitHub bubbles: gh auth login), osv-scanner (vulnerabilities"
 say "   for every stack), docker (docker-watch). Nothing breaks without them."

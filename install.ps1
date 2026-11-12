@@ -464,7 +464,7 @@ if ($tools) {
 if ($plugin) {
     $n++
     Write-Host "$n. Logi Options+ > your device > Actions Ring: drag actions from `"MX Dev Kit`" onto the ring."
-    Write-Host '   A bubble shows only its name at first: edit its icon once and reset it to see the live image.'
+    Write-Host '   If a bubble shows only its name, edit its icon once and reset it to see the live image.'
 }
 $n++
 Write-Host "$n. Optional tools, each for its own feature: gh (GitHub bubbles: gh auth login), osv-scanner (vulnerabilities"
