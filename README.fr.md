@@ -15,10 +15,6 @@ Un plugin pour l'Actions Ring de Logitech qui affiche l'état du dépôt sur leq
 
 ![Démo de l'Actions Ring sur une fenêtre du Finder : l'anneau s'ouvre autour du curseur sur un projet avec une CI en échec, 3 fichiers modifiés et 2 commits à pousser. Un clic sur Commit demande une confirmation sur main, un second clic committe, un clic sur Push envoie 3 commits, et la bulle de CI passe au vert.](docs/img/demo.gif)
 
-![Deux Actions Rings dessinés par le plugin. À gauche : la bulle Claude Code et un projet avec une CI en échec, 7 issues, 2 pull requests, 5 failles, 3 fichiers modifiés et 2 commits à pousser. À droite : la bulle d'agent générique et un autre projet avec une CI au vert, un minuteur focus en cours et 2 revues demandées.](docs/img/hero.png)
-
-<sub>Dessiné par le code du plugin lui-même. Dans Logi Options+, l'anneau est plus petit et s'ouvre autour du curseur.</sub>
-
 ## Ce qu'il fait
 
 - **Des bulles de projet** qui suivent le dépôt de votre dernière commande dans le terminal ou de la fenêtre du Finder au premier plan (l'Explorateur de fichiers sous Windows) : nom et branche, issues et pull requests ouvertes, tous les checks du dernier commit, failles connues.
@@ -126,6 +122,8 @@ Le plugin lance `git status` toutes les quelques secondes sans verrou optionnel 
 ## L'Actions Ring des développeurs
 
 Les bulles se mettent à jour toutes seules. GitHub est interrogé toutes les 60 secondes, toutes les 15 pendant que des checks tournent et pendant les deux minutes qui suivent un push. `git fetch` passe toutes les 3 minutes pour la bulle Pull.
+
+![Deux Actions Rings dessinés par le plugin. À gauche : la bulle Claude Code et un projet avec une CI en échec, 7 issues, 2 pull requests, 5 failles, 3 fichiers modifiés et 2 commits à pousser. À droite : la bulle d'agent générique et un autre projet avec une CI au vert, un minuteur focus en cours et 2 revues demandées.](docs/img/hero.png)
 
 | | Bulle | Affiche | Clic |
 |---|---|---|---|

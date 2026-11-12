@@ -15,10 +15,6 @@ A plugin for the Logitech Actions Ring that shows the state of the repository yo
 
 ![Demo of the Actions Ring over a Finder window: the ring opens around the pointer on a project with a failed CI, 3 changed files and 2 commits to push. A click on Commit asks for confirmation on main, a second click commits, a click on Push sends 3 commits, and the CI bubble turns green.](docs/img/demo.gif)
 
-![Two Actions Rings drawn by the plugin. Left: the Claude Code bubble and a project with a failed CI, 7 issues, 2 pull requests, 5 vulnerabilities, 3 changed files and 2 commits to push. Right: the generic agent bubble and another project with a green CI, a focus timer running and 2 review requests.](docs/img/hero.png)
-
-<sub>Drawn by the plugin's own code. In Logi Options+ the ring is smaller and opens around the cursor.</sub>
-
 ## Features
 
 - **Project bubbles** that follow the repository of your last terminal prompt or of the front Finder window (File Explorer on Windows): name and branch, open issues, open pull requests, every check of the latest commit, known vulnerabilities.
@@ -126,6 +122,8 @@ The plugin runs `git status` every few seconds without optional locks, so it nev
 ## Actions Ring for devs
 
 The bubbles refresh on their own. GitHub is polled every 60 seconds, every 15 while checks run and for two minutes after a push. `git fetch` runs every 3 minutes for the Pull bubble.
+
+![Two Actions Rings drawn by the plugin. Left: the Claude Code bubble and a project with a failed CI, 7 issues, 2 pull requests, 5 vulnerabilities, 3 changed files and 2 commits to push. Right: the generic agent bubble and another project with a green CI, a focus timer running and 2 review requests.](docs/img/hero.png)
 
 | | Bubble | Shows | Click |
 |---|---|---|---|
