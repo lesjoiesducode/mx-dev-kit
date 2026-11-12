@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 (2026-11-12)
+
+- **Pictograms from GitHub's Primer octicons.** The bubbles draw them from SVG at the size the ring asks for, so their edges stay smooth in Options+: the arrows of Push and Pull keep their tips, the pull request icon is GitHub's own, and the line of Commit meets its circle. The pictogram sits a little higher above the number. The README images are drawn again.
+- **Windows: the project bubbles follow File Explorer**, as they follow the Finder on macOS. The folder of the front File Explorer window becomes the current project; with tabs, the window title tells which one is in front. `followFinder` covers both. Not yet tried on a real Windows machine: reports are welcome.
+- **macOS: following the Finder starts no process.** The plugin asks macOS which app is in front instead of running `lsappinfo` twice every two seconds, and runs `osascript` only while the Finder is in front.
+- **The installers offer GitHub CLI**, which the GitHub bubbles, the GitHub inbox and `ci-watch` need. When `gh` is missing, `install.sh` offers `brew install gh` and `install.ps1` `winget install GitHub.cli`, when Homebrew or winget is there. When `gh` is installed but signed out, both offer `gh auth login`. Enter means yes, a refusal never stops the install, and `--yes`, `--only` or no terminal only print the advice.
+- README: a demo of the ring at the top, the ring image next to the bubbles table, a step to give the Finder (or File Explorer) a ring of its own, and the icon reset only for a bubble that shows its name.
+
 ## 1.2.0 (2026-11-12)
 
 - **The CI bubble reads every check of the latest commit**: all the workflows of the push, and the services that report to GitHub (Vercel, Netlify, CircleCI and other check runs or commit statuses). Red as soon as one fails, running while one still runs, green when all passed. It comes with the issue and pull request counts, in one GitHub call instead of three. For two minutes after a push (from the bubble or a terminal), GitHub is polled every 15 seconds, so checks that end between two regular polls still vibrate. A click opens the failing check.
