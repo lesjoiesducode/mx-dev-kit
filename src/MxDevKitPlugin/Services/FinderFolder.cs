@@ -2,8 +2,9 @@ namespace Loupedeck.MxDevKitPlugin;
 
 // macOS: folder of the front Finder window, while the Finder is the active app.
 // The first call makes macOS ask whether Logi Plugin Service may control the Finder.
-internal sealed class FinderFolder
+internal sealed class FinderFolder : IFolderWindow
 {
+    private const string FinderBundleId = "com.apple.finder";
     private const string LsAppInfo = "/usr/bin/lsappinfo";
     private const string OsaScript = "/usr/bin/osascript";
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(4);
@@ -18,6 +19,11 @@ internal sealed class FinderFolder
             return false;
         }
 
+        if (MacFrontApp.BundleId() is { } id)
+        {
+            return id == FinderBundleId;
+        }
+
         var asn = ProcessRunner.Run(LsAppInfo, null, Timeout, new[] { "front" })?.Stdout.Trim();
         if (string.IsNullOrEmpty(asn))
         {
@@ -25,7 +31,7 @@ internal sealed class FinderFolder
         }
 
         var info = ProcessRunner.Run(LsAppInfo, null, Timeout, new[] { "info", "-only", "bundleid", asn })?.Stdout;
-        return info != null && info.Contains("\"com.apple.finder\"", StringComparison.Ordinal);
+        return info != null && info.Contains($"\"{FinderBundleId}\"", StringComparison.Ordinal);
     }
 
     public string? FrontWindowFolder()

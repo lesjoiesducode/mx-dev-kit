@@ -19,7 +19,7 @@ internal sealed class ProjectWatcher : IDisposable
     private static readonly IReadOnlyDictionary<string, string> GitEnvironment = new Dictionary<string, string> { ["GIT_OPTIONAL_LOCKS"] = "0" };
 
     private readonly object _sync = new();
-    private readonly FinderFolder _finder = new();
+    private readonly IFolderWindow _finder = OperatingSystem.IsWindows() ? new ExplorerFolder() : new FinderFolder();
     private Timer? _timer;
     private int _ticking;
     private int _actionBusy;
@@ -224,7 +224,7 @@ internal sealed class ProjectWatcher : IDisposable
     }
 
     // The last folder used wins: a new prompt in the terminal rewrites current-dir,
-    // and the Finder counts when it comes to the front or changes folder.
+    // and the Finder (File Explorer on Windows) counts when it comes to the front or changes folder.
     private string? CurrentDir()
     {
         try
@@ -246,7 +246,7 @@ internal sealed class ProjectWatcher : IDisposable
             // The shell is writing the file right now: next tick.
         }
 
-        if (OperatingSystem.IsMacOS() && DevKit.Config.FollowFinder)
+        if (DevKit.Config.FollowFinder)
         {
             var front = _finder.IsFront();
             if (front)

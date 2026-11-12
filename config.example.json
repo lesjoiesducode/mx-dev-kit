@@ -85,7 +85,7 @@
     "enabled": true
   },
 
-  // macOS: the front Finder window counts as the current folder too.
+  // The front Finder window (File Explorer on Windows) counts as the current folder too.
   "followFinder": true,
 
   // Only when a tool is not found on its own (the plugin does not see your shell's PATH).

@@ -19,7 +19,7 @@ A plugin for the Logitech Actions Ring that shows the state of the repository yo
 
 ## Features
 
-- **Project bubbles** that follow the repository of your last terminal prompt or Finder window: name and branch, open issues, open pull requests, every check of the latest commit, known vulnerabilities.
+- **Project bubbles** that follow the repository of your last terminal prompt or of the front Finder window (File Explorer on Windows): name and branch, open issues, open pull requests, every check of the latest commit, known vulnerabilities.
 - **Git from the ring.** Commit all changes, push, pull. Push never forces and pull only fast-forwards. An AI CLI can write the commit message. Commit refuses during a merge conflict or when a secret file such as `.env` would go in, and asks for a second click on the main branch.
 - **Coding agents in one click.** Claude Code, Codex, Gemini CLI and Copilot CLI each have a bubble with their mark, which opens the terminal you work in (Terminal, iTerm, Ghostty, Warp; Windows Terminal or PowerShell) in the repository and starts the agent. **Agent in project** does the same with any command you set.
 - **GitHub inbox** across all your repositories: review requests, mentions, assignments, approvals, merges, changes requested and failed checks on your pull requests. Each one vibrates and shows a notification you can click.

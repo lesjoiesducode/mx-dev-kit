@@ -19,7 +19,7 @@ Un plugin pour l'Actions Ring de Logitech qui affiche l'état du dépôt sur leq
 
 ## Ce qu'il fait
 
-- **Des bulles de projet** qui suivent le dépôt de votre dernière commande dans le terminal ou de votre fenêtre du Finder : nom et branche, issues et pull requests ouvertes, tous les checks du dernier commit, failles connues.
+- **Des bulles de projet** qui suivent le dépôt de votre dernière commande dans le terminal ou de la fenêtre du Finder au premier plan (l'Explorateur de fichiers sous Windows) : nom et branche, issues et pull requests ouvertes, tous les checks du dernier commit, failles connues.
 - **Git depuis l'anneau.** Commit de toutes les modifications, push, pull. Le push n'est jamais forcé et le pull ne fait que de l'avance rapide. Une IA en ligne de commande peut rédiger le message de commit. Le commit refuse de partir pendant un conflit de merge ou si un fichier secret comme `.env` s'y glisse, et demande un second clic sur la branche principale.
 - **Les agents de code en un clic.** Claude Code, Codex, Gemini CLI et Copilot CLI ont chacun leur bulle à leur logo, qui ouvre dans le dépôt le terminal où vous travaillez (Terminal, iTerm, Ghostty, Warp ; Windows Terminal ou PowerShell) et y lance l'agent. **Agent dans le projet** fait la même chose avec la commande de votre choix.
 - **Une boîte GitHub** pour tous vos dépôts : revues demandées, mentions, assignations, PR approuvées, fusionnées, avec des changements demandés ou des checks en échec. Chaque événement fait vibrer la souris et affiche une notification cliquable.
