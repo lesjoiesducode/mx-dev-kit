@@ -9,7 +9,7 @@ Le kit des développeurs pour les périphériques Logitech MX, sur macOS et Wind
 [![CI](https://github.com/lesjoiesducode/mx-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/lesjoiesducode/mx-dev-kit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![macOS](https://img.shields.io/badge/macOS-tested-success)
-![Windows](https://img.shields.io/badge/Windows-untested-lightgrey)
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-success)
 
 Un plugin pour l'Actions Ring de Logitech qui affiche l'état du dépôt sur lequel vous travaillez : CI, issues, pull requests, failles, modifications à committer, commits à pousser ou à récupérer. Chaque bulle est aussi un bouton, et un clic lance Claude Code, Codex, Gemini CLI ou Copilot CLI dans le projet. Avec une MX Master 4, la souris vibre quand la CI se termine, quand votre agent a fini ou quand un conteneur tombe.
 
@@ -45,8 +45,6 @@ Certaines fonctions s'appuient sur un outil que vous avez peut-être déjà. San
 | [osv-scanner](https://google.github.io/osv-scanner/) | Les failles de tous les fichiers de verrouillage. Sans lui, seulement les projets npm. |
 | Docker | `docker-watch` |
 | [terminal-notifier](https://github.com/julienXX/terminal-notifier), macOS | Des notifications qui ouvrent une page quand on clique dessus |
-
-**Windows n'est pas testé.** Le plugin et les scripts sont écrits pour Windows et le workflow de release les vérifie sur Windows, mais personne ne les a encore fait tourner sur une vraie machine Windows avec un périphérique MX. Les retours et les pull requests sont les bienvenus.
 
 ## Installation
 
@@ -99,7 +97,7 @@ Pour ajouter le plugin à la main, téléchargez [MxDevKit.lplug4](https://githu
 
 Avec les vibrations des agents ou l'intégration au terminal, l'installeur propose aussi d'installer le [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) de Jasper M-W (licence MIT), par lequel passent leurs vibrations. Il télécharge `HapticWeb.lplug4` depuis la dernière release de ce projet, vérifie qu'il s'agit bien du Haptic Web Plugin et demande à Logi Plugin Service de le charger. `--yes` et `--only` l'installent sans demander, `--no-haptic-web` (`-NoHapticWeb` sous Windows) le saute sans demander.
 
-S'il est déjà installé, depuis le Marketplace ou ailleurs, il reste tel quel et n'est jamais remplacé. Si quelque chose coince (hors ligne, GitHub indisponible, Logi Options+ absent, paquet refusé), le reste du kit s'installe quand même et l'installeur vous renvoie vers le Marketplace d'Options+. L'installeur Windows fait de même, sans avoir été testé.
+S'il est déjà installé, depuis le Marketplace ou ailleurs, il reste tel quel et n'est jamais remplacé. Si quelque chose coince (hors ligne, GitHub indisponible, Logi Options+ absent, paquet refusé), le reste du kit s'installe quand même et l'installeur vous renvoie vers le Marketplace d'Options+. L'installeur Windows fait de même.
 
 </details>
 
@@ -202,7 +200,7 @@ Le journal du plugin est `~/Library/Application Support/Logi/LogiPluginService/L
 
 ## Questions fréquentes
 
-**Avec quels périphériques ?** Les bulles demandent un périphérique Logitech qui ouvre l'Actions Ring dans Logi Options+. Logitech le propose sur ses souris et claviers MX, comme la MX Master 4 et le MX Keys S, avec Logi Options+ 1.83 ou plus récent ([la page de Logitech](https://www.logitech.com/fr-fr/software/logi-options-plus/actions-ring.html)). Les vibrations demandent une MX Master 4, la seule équipée d'un moteur haptique. Le kit est testé avec une MX Master 4 sur macOS.
+**Avec quels périphériques ?** Les bulles demandent un périphérique Logitech qui ouvre l'Actions Ring dans Logi Options+. Logitech le propose sur ses souris et claviers MX, comme la MX Master 4 et le MX Keys S, avec Logi Options+ 1.83 ou plus récent ([la page de Logitech](https://www.logitech.com/fr-fr/software/logi-options-plus/actions-ring.html)). Les vibrations demandent une MX Master 4, la seule équipée d'un moteur haptique. Le kit est testé avec une MX Master 4.
 
 **GitLab, Bitbucket, GitHub Enterprise ?** Pas encore. Les bulles git (projet, commit, push, pull) marchent avec n'importe quel remote, mais les bulles GitHub, la boîte GitHub et `ci-watch` ne connaissent que github.com.
 

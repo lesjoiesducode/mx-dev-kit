@@ -27,8 +27,6 @@ Vibrations need an MX Master 4 with the [Haptic Web Plugin](https://marketplace.
 
 You can also source the files straight from this repository (`shell/mx.zsh`).
 
-Windows (Git Bash and PowerShell): untested on Windows, please test before relying on it, issues and PRs welcome.
-
 ## Settings
 
 Set them before the `source` line (`set -g` in fish).

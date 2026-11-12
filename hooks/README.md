@@ -44,7 +44,7 @@ hooks/install.sh            # every agent found
 hooks/install.sh --claude   # or --gemini, --codex, --copilot, or --dry-run to preview
 ```
 
-Windows (untested on Windows, please test before relying on it, issues and PRs welcome):
+Windows:
 
 ```powershell
 .\hooks\install.ps1          # or -Claude, -Gemini, -Codex, -Copilot, -DryRun

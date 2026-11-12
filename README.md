@@ -9,7 +9,7 @@ Developer productivity kit for Logitech MX devices on macOS and Windows. Actions
 [![CI](https://github.com/lesjoiesducode/mx-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/lesjoiesducode/mx-dev-kit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![macOS](https://img.shields.io/badge/macOS-tested-success)
-![Windows](https://img.shields.io/badge/Windows-untested-lightgrey)
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-success)
 
 A plugin for the Logitech Actions Ring that shows the state of the repository you are working on: CI, issues, pull requests, vulnerabilities, changes to commit, push or pull. Each bubble is also a button, and one click starts Claude Code, Codex, Gemini CLI or Copilot CLI in the project. On an MX Master 4, the mouse vibrates when your CI finishes, your coding agent is done or a container dies.
 
@@ -45,8 +45,6 @@ Some features use a tool you may already have. Without it, that feature stays of
 | [osv-scanner](https://google.github.io/osv-scanner/) | Vulnerabilities for every lockfile. Without it, npm projects only. |
 | Docker | `docker-watch` |
 | [terminal-notifier](https://github.com/julienXX/terminal-notifier), macOS | Notifications that open a page when clicked |
-
-**Windows is untested.** The plugin and the scripts are written for Windows and the release workflow checks them there, but nobody has run them on a real Windows machine with an MX device yet. Reports and pull requests are welcome.
 
 ## Install
 
@@ -99,7 +97,7 @@ To add the plugin by hand instead, download [MxDevKit.lplug4](https://github.com
 
 With the agent haptics or the terminal integration, the installer also offers to install the [Haptic Web Plugin](https://github.com/Fallstop/HapticWebPlugin) by Jasper M-W (MIT license), which their vibrations go through. It downloads `HapticWeb.lplug4` from the latest release of that project, checks that the package is the Haptic Web Plugin, and asks Logi Plugin Service to load it. `--yes` and `--only` install it without asking, `--no-haptic-web` (`-NoHapticWeb` on Windows) skips it without asking.
 
-If it is already installed, from the Marketplace or elsewhere, it is left as it is, never replaced. If anything goes wrong (offline, GitHub unavailable, Logi Options+ missing, package refused), the rest of the kit installs anyway and the installer tells you to get it from the Marketplace in Options+ instead. The Windows installer does the same, untested.
+If it is already installed, from the Marketplace or elsewhere, it is left as it is, never replaced. If anything goes wrong (offline, GitHub unavailable, Logi Options+ missing, package refused), the rest of the kit installs anyway and the installer tells you to get it from the Marketplace in Options+ instead. The Windows installer does the same.
 
 </details>
 
@@ -200,7 +198,7 @@ The plugin log is `~/Library/Application Support/Logi/LogiPluginService/Logs/plu
 
 ## FAQ
 
-**Which devices work with it?** The bubbles need a Logitech device that opens the Actions Ring in Logi Options+. Logitech offers the Actions Ring on its MX mice and keyboards, such as the MX Master 4 and the MX Keys S, with Logi Options+ 1.83 or later ([Logitech's page](https://www.logitech.com/en-us/software/logi-options-plus/actions-ring.html)). Vibrations need an MX Master 4, the only one with a haptic motor. The kit is tested with an MX Master 4 on macOS.
+**Which devices work with it?** The bubbles need a Logitech device that opens the Actions Ring in Logi Options+. Logitech offers the Actions Ring on its MX mice and keyboards, such as the MX Master 4 and the MX Keys S, with Logi Options+ 1.83 or later ([Logitech's page](https://www.logitech.com/en-us/software/logi-options-plus/actions-ring.html)). Vibrations need an MX Master 4, the only one with a haptic motor. The kit is tested with an MX Master 4.
 
 **GitLab, Bitbucket, GitHub Enterprise?** Not yet. The git bubbles (project, commit, push, pull) work with any remote, but the GitHub bubbles, the inbox and `ci-watch` only know github.com.
 

@@ -30,7 +30,7 @@ mx-notify "Deploy done" "api 1.4.2 is live" https://example.com/status
 | Windows | Native toast through PowerShell (`Windows.UI.Notifications`), nothing to install | Opens the URL |
 | Linux | `notify-send` | Opens nothing |
 
-Windows: `mx-notify.ps1 "Deploy done" "api 1.4.2 is live" https://example.com/status` (from PowerShell 7 it hands the toast over to Windows PowerShell, which is the one that can show it). From Git Bash, `mx-notify` calls `mx-notify.ps1` for you. Untested on Windows, please test before relying on it, issues and PRs welcome.
+Windows: `mx-notify.ps1 "Deploy done" "api 1.4.2 is live" https://example.com/status` (from PowerShell 7 it hands the toast over to Windows PowerShell, which is the one that can show it). From Git Bash, `mx-notify` calls `mx-notify.ps1` for you.
 
 | Setting | |
 |---|---|
@@ -70,7 +70,7 @@ Watching 3 target(s) every 60s. Ctrl-C to stop.
 | `-n COUNT` | `2` | Failed checks in a row before a target is reported down, to avoid false alarms |
 | `-q` | | Only print state changes |
 
-Windows (untested on Windows, please test before relying on it, issues and PRs welcome):
+Windows:
 
 ```powershell
 uptime-watch.ps1 https://example.com localhost:5432 -Interval 60 -Timeout 10 -Failures 2 -Quiet
@@ -144,7 +144,7 @@ It only reads the `docker events` stream: no setting, no polling, the same on Do
 | `-p NAME` | The containers of one compose project (`docker compose ls` gives the names) |
 | `-q` | Only print what vibrates |
 
-Windows (untested on Windows, please test before relying on it, issues and PRs welcome): `docker-watch.ps1`, `docker-watch.ps1 -All`, `docker-watch.ps1 -Project shop -Quiet`.
+Windows: `docker-watch.ps1`, `docker-watch.ps1 -All`, `docker-watch.ps1 -Project shop -Quiet`.
 
 To keep it running in the background, the same recipes as `uptime-watch` above work: `nohup docker-watch --all -q >> ~/docker-watch.log 2>&1 &`, a launchd agent with `docker-watch` and `--all` in `ProgramArguments`, or a Task Scheduler task running `docker-watch.ps1 -All -Quiet` at logon.
 
