@@ -127,23 +127,23 @@ Les bulles se mettent à jour toutes seules. GitHub est interrogé toutes les 60
 
 | | Bulle | Affiche | Clic |
 |---|---|---|---|
-| <img src="docs/img/bubbles/project.png" width="48" alt=""> | Projet | Dépôt et branche | Ouvre le dépôt sur GitHub, sinon le dossier |
-| <img src="docs/img/bubbles/issues.png" width="48" alt=""> | Issues du projet | Issues ouvertes | Ouvre la liste |
-| <img src="docs/img/bubbles/pull-requests.png" width="48" alt=""> | PR du projet | Pull requests ouvertes | Ouvre la liste |
-| <img src="docs/img/bubbles/ci-failed.png" width="48" alt=""> | CI du projet | Tous les checks du dernier commit de la branche : tous les workflows, et les services qui publient leur statut sur GitHub (Vercel, Netlify, CircleCI...). Rouge dès qu'un seul échoue, vibre à la fin | Ouvre celui en échec, ou le run |
-| <img src="docs/img/bubbles/audit.png" width="48" alt=""> | Failles du projet | Failles de gravité high et critical par défaut | Relance l'analyse |
-| <img src="docs/img/bubbles/commit.png" width="48" alt=""> | Commit du projet | Fichiers modifiés | `git add -A` et commit, avec des [garde-fous](#garde-fous-du-commit) |
-| <img src="docs/img/bubbles/push.png" width="48" alt=""> | Push du projet | Commits à pousser | `git push`, publie une nouvelle branche |
-| <img src="docs/img/bubbles/pull.png" width="48" alt=""> | Pull du projet | Commits à récupérer | `git pull --ff-only` |
-| <img src="docs/img/bubbles/claude.png" width="48" alt=""> | Claude Code | | Lance `claude` dans un terminal, dans le projet |
-| <img src="docs/img/bubbles/codex.png" width="48" alt=""> | Codex | | Lance `codex` |
-| <img src="docs/img/bubbles/gemini.png" width="48" alt=""> | Gemini CLI | | Lance `gemini` |
-| <img src="docs/img/bubbles/copilot.png" width="48" alt=""> | Copilot CLI | | Lance `copilot` |
-| <img src="docs/img/bubbles/agent-missing.png" width="48" alt=""> | | L'agent n'est pas installé | Ouvre sa page d'installation |
-| <img src="docs/img/bubbles/agent.png" width="48" alt=""> | Agent dans le projet | | Lance `agent.command` (`claude` par défaut), pour tout autre agent ou outil |
-| <img src="docs/img/bubbles/reviews.png" width="48" alt=""> | Revues demandées | Pull requests qui attendent votre revue | Les ouvre |
-| <img src="docs/img/bubbles/inbox.png" width="48" alt=""> | Boîte GitHub | Dernier événement GitHub qui vous concerne | L'ouvre |
-| <img src="docs/img/bubbles/focus-running.png" width="48" alt=""> | Minuteur focus | Temps restant | Lance ou arrête |
+| <img src="docs/img/bubbles/project.png" width="64" alt=""> | Projet | Dépôt et branche | Ouvre le dépôt sur GitHub, sinon le dossier |
+| <img src="docs/img/bubbles/issues.png" width="64" alt=""> | Issues du projet | Issues ouvertes | Ouvre la liste |
+| <img src="docs/img/bubbles/pull-requests.png" width="64" alt=""> | PR du projet | Pull requests ouvertes | Ouvre la liste |
+| <img src="docs/img/bubbles/ci-failed.png" width="64" alt=""> | CI du projet | Tous les checks du dernier commit de la branche : tous les workflows, et les services qui publient leur statut sur GitHub (Vercel, Netlify, CircleCI...). Rouge dès qu'un seul échoue, vibre à la fin | Ouvre celui en échec, ou le run |
+| <img src="docs/img/bubbles/audit.png" width="64" alt=""> | Failles du projet | Failles de gravité high et critical par défaut | Relance l'analyse |
+| <img src="docs/img/bubbles/commit.png" width="64" alt=""> | Commit du projet | Fichiers modifiés | `git add -A` et commit, avec des [garde-fous](#garde-fous-du-commit) |
+| <img src="docs/img/bubbles/push.png" width="64" alt=""> | Push du projet | Commits à pousser | `git push`, publie une nouvelle branche |
+| <img src="docs/img/bubbles/pull.png" width="64" alt=""> | Pull du projet | Commits à récupérer | `git pull --ff-only` |
+| <img src="docs/img/bubbles/claude.png" width="64" alt=""> | Claude Code | | Lance `claude` dans un terminal, dans le projet |
+| <img src="docs/img/bubbles/codex.png" width="64" alt=""> | Codex | | Lance `codex` |
+| <img src="docs/img/bubbles/gemini.png" width="64" alt=""> | Gemini CLI | | Lance `gemini` |
+| <img src="docs/img/bubbles/copilot.png" width="64" alt=""> | Copilot CLI | | Lance `copilot` |
+| <img src="docs/img/bubbles/agent-missing.png" width="64" alt=""> | | L'agent n'est pas installé | Ouvre sa page d'installation |
+| <img src="docs/img/bubbles/agent.png" width="64" alt=""> | Agent dans le projet | | Lance `agent.command` (`claude` par défaut), pour tout autre agent ou outil |
+| <img src="docs/img/bubbles/reviews.png" width="64" alt=""> | Revues demandées | Pull requests qui attendent votre revue | Les ouvre |
+| <img src="docs/img/bubbles/inbox.png" width="64" alt=""> | Boîte GitHub | Dernier événement GitHub qui vous concerne | L'ouvre |
+| <img src="docs/img/bubbles/focus-running.png" width="64" alt=""> | Minuteur focus | Temps restant | Lance ou arrête |
 
 Les noms sont ceux qu'affiche Options+ quand le plugin est en français ; les images ci-dessus sont celles de la version anglaise.
 
