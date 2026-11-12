@@ -13,6 +13,8 @@ Le kit des développeurs pour les périphériques Logitech MX, sur macOS et Wind
 
 Un plugin pour l'Actions Ring de Logitech qui affiche l'état du dépôt sur lequel vous travaillez : CI, issues, pull requests, failles, modifications à committer, commits à pousser ou à récupérer. Chaque bulle est aussi un bouton, et un clic lance Claude Code, Codex, Gemini CLI ou Copilot CLI dans le projet. Avec une MX Master 4, la souris vibre quand la CI se termine, quand votre agent a fini ou quand un conteneur tombe.
 
+![Démo de l'Actions Ring sur une fenêtre du Finder : l'anneau s'ouvre autour du curseur sur un projet avec une CI en échec, 3 fichiers modifiés et 2 commits à pousser. Un clic sur Commit demande une confirmation sur main, un second clic committe, un clic sur Push envoie 3 commits, et la bulle de CI passe au vert.](docs/img/demo.gif)
+
 ![Deux Actions Rings dessinés par le plugin. À gauche : la bulle Claude Code et un projet avec une CI en échec, 7 issues, 2 pull requests, 5 failles, 3 fichiers modifiés et 2 commits à pousser. À droite : la bulle d'agent générique et un autre projet avec une CI au vert, un minuteur focus en cours et 2 revues demandées.](docs/img/hero.png)
 
 <sub>Dessiné par le code du plugin lui-même. Dans Logi Options+, l'anneau est plus petit et s'ouvre autour du curseur.</sub>

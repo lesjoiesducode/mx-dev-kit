@@ -13,6 +13,8 @@ Developer productivity kit for Logitech MX devices on macOS and Windows. Actions
 
 A plugin for the Logitech Actions Ring that shows the state of the repository you are working on: CI, issues, pull requests, vulnerabilities, changes to commit, push or pull. Each bubble is also a button, and one click starts Claude Code, Codex, Gemini CLI or Copilot CLI in the project. On an MX Master 4, the mouse vibrates when your CI finishes, your coding agent is done or a container dies.
 
+![Demo of the Actions Ring over a Finder window: the ring opens around the pointer on a project with a failed CI, 3 changed files and 2 commits to push. A click on Commit asks for confirmation on main, a second click commits, a click on Push sends 3 commits, and the CI bubble turns green.](docs/img/demo.gif)
+
 ![Two Actions Rings drawn by the plugin. Left: the Claude Code bubble and a project with a failed CI, 7 issues, 2 pull requests, 5 vulnerabilities, 3 changed files and 2 commits to push. Right: the generic agent bubble and another project with a green CI, a focus timer running and 2 review requests.](docs/img/hero.png)
 
 <sub>Drawn by the plugin's own code. In Logi Options+ the ring is smaller and opens around the cursor.</sub>
