@@ -497,6 +497,8 @@ if ($plugin -or $tools) {
             Write-Host 'GitHub CLI found but not signed in: run gh auth login to turn the GitHub bubbles on.'
         }
     }
+    # A signed-out gh leaves its exit code behind: the install itself went fine.
+    $global:LASTEXITCODE = 0
 }
 
 Write-Host "`n== Next steps"

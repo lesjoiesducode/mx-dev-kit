@@ -144,6 +144,9 @@ Describe 'install.ps1 run from <Edition>' -ForEach $editions {
         $out.ExitCode | Should -Be 0 -Because ($out.Out + $out.Err)
         $out.Out | Should -Match 'GitHub CLI found but not signed in: run gh auth login'
         $out.Out | Should -Not -Match 'Sign in to GitHub now'
+        # The release workflow ends its steps with exit $LASTEXITCODE: a signed-out gh must not fail them.
+        $code = Invoke-Ps $Edition $h -Command "& '$install' -Only shell -NoHapticWeb; exit `$LASTEXITCODE" -Variables @{ PATH = $path; MX_TEST_GH_AUTH = '1' }
+        $code.ExitCode | Should -Be 0 -Because ($code.Out + $code.Err)
 
         $in = Invoke-Ps $Edition $h -File $install -Arguments '-Only', 'shell', '-NoHapticWeb' -Variables @{ PATH = $path; MX_TEST_GH_AUTH = '0' }
         $in.ExitCode | Should -Be 0 -Because ($in.Out + $in.Err)
