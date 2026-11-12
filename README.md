@@ -61,8 +61,9 @@ irm https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/instal
 ```
 
 1. **Run the installer.** It asks about each part (the Actions Ring plugin, the coding agent haptics, the terminal integration) and Enter means yes.
-2. **Fill the ring.** In Options+, open your device, then **Actions Ring**, and drag actions from **MX Dev Kit** onto a ring. A good start is **Project**, **CI status**, **Pull requests**, **Commit all changes**, **Push**, **Pull**, the bubble of your coding agent and **GitHub inbox**.
-3. **Show the live images.** A new bubble first shows only its name. Click the pencil on its icon, reset the icon with the round arrow above the preview, then **Apply** and **Save**. You do this once per bubble.
+2. **Give the Finder a ring of its own (recommended).** Options+ applies a ring to every application by default, so your usual actions would make way for git. Keep the dev ring for the place where you open your projects instead: in Options+, open your device, add an application and browse to `/System/Library/CoreServices/Finder.app` (in the file dialog, Cmd+Shift+G lets you type the path). On Windows, the File Explorer is `C:\Windows\explorer.exe`. Add your terminal or your editor the same way if you want the ring there too. The bubbles follow the folder of the front Finder or File Explorer window, and that of your last terminal prompt.
+3. **Fill the ring.** In Options+, open your device, select that application, then **Actions Ring**, and drag actions from **MX Dev Kit** onto a ring. A good start is **Project**, **CI status**, **Pull requests**, **Commit all changes**, **Push**, **Pull**, the bubble of your coding agent and **GitHub inbox**.
+4. **Show the live images.** A new bubble first shows only its name. Click the pencil on its icon, reset the icon with the round arrow above the preview, then **Apply** and **Save**. You do this once per bubble.
 
 Then open a new terminal, `cd` into a repository and run `haptic completed` to check the vibration.
 
