@@ -74,6 +74,7 @@ internal static class Samples
         yield return ("focus-idle", Bubbles.Focus(Focus(FocusPhase.Idle), En, Now));
         yield return ("focus-running", Bubbles.Focus(Focus(FocusPhase.Focus), En, Now));
         yield return ("focus-break", Bubbles.Focus(Focus(FocusPhase.Break), En, Now));
+        yield return ("excuse", Bubbles.Excuse(En));
     }
 
     // Clockwise from the top, like the slots of the Actions Ring.

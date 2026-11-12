@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 (2026-11-12)
+
+- **Dev excuses** bubble: a white smiley on pink, the only pink bubble. A click writes a random developer excuse in the app in front, never the same one twice in a row: some forty in English and forty written for French developers, in the language of the plugin. The excuse goes through the clipboard (copy, then Cmd+V or Ctrl+V), and the clipboard comes back as it was a moment later: everything on macOS, text only on Windows. On macOS, typing needs the Accessibility permission for Logi Plugin Service; without it, the first click asks macOS for it, and the excuse stays in the clipboard with a notification that shows it. The trigger file takes `excuse`. The Windows path has not been tried on a real Windows machine yet: reports are welcome.
+
 ## 1.3.0 (2026-11-12)
 
 - **Pictograms from GitHub's Primer octicons.** The bubbles draw them from SVG at the size the ring asks for, so their edges stay smooth in Options+: the arrows of Push and Pull keep their tips, the pull request icon is GitHub's own, and the line of Commit meets its circle. The pictogram sits a little higher above the number. The README images are drawn again.

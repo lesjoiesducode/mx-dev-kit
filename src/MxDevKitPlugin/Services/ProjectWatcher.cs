@@ -836,6 +836,9 @@ internal sealed class ProjectWatcher : IDisposable
             case "focus":
                 DevKit.Focus.Click();
                 break;
+            case "excuse":
+                DevKit.Excuses.Write();
+                break;
             case "audit":
                 ProcessRunner.Detach(this.RefreshAudit);
                 break;

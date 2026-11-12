@@ -23,6 +23,7 @@ Un plugin pour l'Actions Ring de Logitech qui affiche l'état du dépôt sur leq
 - **Une boîte GitHub** pour tous vos dépôts : revues demandées, mentions, assignations, PR approuvées, fusionnées, avec des changements demandés ou des checks en échec. Chaque événement fait vibrer la souris et affiche une notification cliquable.
 - **Les failles de n'importe quelle stack** avec osv-scanner, ou `npm audit` si osv-scanner n'est pas installé. Rien n'est jamais corrigé à votre place.
 - **Un minuteur focus** : 25 minutes de travail, puis 5 minutes de pause.
+- **Des excuses de dev pour assurer vos arrières.** Un clic écrit une excuse de dev au hasard dans l'application au premier plan : une messagerie, un ticket, un commentaire de pull request.
 - **Des hooks pour les agents de code.** Claude Code, Codex CLI, Gemini CLI et GitHub Copilot CLI font vibrer la souris quand ils ont fini un tour d'au moins 30 secondes, quand ils vous attendent ou quand ils plantent.
 - **L'intégration au terminal** pour zsh, bash, fish et PowerShell. Toute commande de plus de 30 secondes vibre à la fin.
 - **`uptime-watch`** pour surveiller des sites, des endpoints de santé et des ports locaux, **`docker-watch`** pour les conteneurs de votre stack compose.
@@ -144,11 +145,22 @@ Les bulles se mettent à jour toutes seules. GitHub est interrogé toutes les 60
 <tr><td width="92"><img src="docs/img/bubbles/reviews.png" width="64" height="64" alt=""></td><td>Revues demandées</td><td>Pull requests qui attendent votre revue</td><td>Les ouvre</td></tr>
 <tr><td width="92"><img src="docs/img/bubbles/inbox.png" width="64" height="64" alt=""></td><td>Boîte GitHub</td><td>Dernier événement GitHub qui vous concerne</td><td>L'ouvre</td></tr>
 <tr><td width="92"><img src="docs/img/bubbles/focus-running.png" width="64" height="64" alt=""></td><td>Minuteur focus</td><td>Temps restant</td><td>Lance ou arrête</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/excuse.png" width="64" height="64" alt=""></td><td>Excuses de dev</td><td></td><td>Écrit une <a href="#excuses-de-dev">excuse de dev</a> au hasard dans l'application au premier plan</td></tr>
 </table>
 
 Les noms sont ceux qu'affiche Options+ quand le plugin est en français ; les images ci-dessus sont celles de la version anglaise.
 
-Pour essayer une bulle sans la souris, écrivez son nom dans le fichier de déclenchement : `echo commit > ~/.config/mx-dev-kit/trigger`. Il accepte aussi `push`, `pull`, `agent`, `claude`, `codex`, `gemini`, `copilot`, `audit`, `focus`, `inbox`, `notify` et `inbox-test`.
+Pour essayer une bulle sans la souris, écrivez son nom dans le fichier de déclenchement : `echo commit > ~/.config/mx-dev-kit/trigger`. Il accepte aussi `push`, `pull`, `agent`, `claude`, `codex`, `gemini`, `copilot`, `audit`, `focus`, `excuse`, `inbox`, `notify` et `inbox-test`.
+
+## Excuses de dev
+
+<img src="docs/img/bubbles/excuse.png" width="64" height="64" alt="La bulle Excuses de dev : un smiley blanc sur fond rose">
+
+La bulle **Excuses de dev** écrit une excuse au hasard dans l'application au premier plan : une messagerie, un ticket, un commentaire de pull request. Une quarantaine d'excuses en français et autant en anglais, dans la langue du plugin, jamais deux fois la même d'affilée. Chez moi, ça marche.
+
+L'excuse passe par le presse-papiers : elle y est copiée, Cmd+V (Ctrl+V sous Windows) la colle, et ce que vous aviez copié revient un instant plus tard. Sous Windows, seul le texte revient.
+
+Sur macOS, écrire dans une autre application demande la permission **Accessibilité** pour Logi Plugin Service, dans Réglages Système > Confidentialité et sécurité > Accessibilité. S'il ne l'a pas, le premier clic demande à macOS d'afficher la demande. Sans elle, l'excuse reste dans le presse-papiers et une notification l'affiche : collez-la vous-même.
 
 ## Scripts
 

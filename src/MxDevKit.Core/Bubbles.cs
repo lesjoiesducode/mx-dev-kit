@@ -26,6 +26,9 @@ public static class Palette
     public static readonly Rgb Amber = new(191, 135, 0);
     public static readonly Rgb Orange = new(219, 109, 40);
     public static readonly Rgb Tomato = new(214, 69, 65);
+
+    // Dev excuses only: no other bubble is pink.
+    public static readonly Rgb Pink = new(191, 57, 137);
 }
 
 public enum Glyph
@@ -46,6 +49,7 @@ public enum Glyph
     Bell,
     At,
     Comment,
+    Smiley,
 }
 
 // The mark of a coding agent, drawn instead of a pictogram.
@@ -275,6 +279,8 @@ public static class Bubbles
             _ => new Bubble(Glyph.Timer, value, Palette.Grey, s.Label(s.ShortFocus, value + " " + s.Minutes)),
         };
     }
+
+    public static Bubble Excuse(Strings s) => new(Glyph.Smiley, "", Palette.Pink, s.ExcuseName);
 
     private static bool HasGitHub(ProjectView v) => v.Repo != null && v.GitHubAvailable;
 

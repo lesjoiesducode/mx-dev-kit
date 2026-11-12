@@ -23,6 +23,7 @@ A plugin for the Logitech Actions Ring that shows the state of the repository yo
 - **GitHub inbox** across all your repositories: review requests, mentions, assignments, approvals, merges, changes requested and failed checks on your pull requests. Each one vibrates and shows a notification you can click.
 - **Vulnerabilities for any stack** with osv-scanner, or `npm audit` when osv-scanner is not installed. It never fixes anything.
 - **Focus timer**, 25 minutes of work then a 5-minute break.
+- **Dev excuses to cover yourself.** One click writes a random developer excuse in the app in front: a chat, a ticket, a pull request comment.
 - **Coding agent hooks.** Claude Code, Codex CLI, Gemini CLI and GitHub Copilot CLI vibrate when they finish a turn of 30 seconds or more, wait for you or fail.
 - **Shell integration** for zsh, bash, fish and PowerShell. Any command longer than 30 seconds vibrates when it ends.
 - **`uptime-watch`** for websites, health endpoints and local ports, **`docker-watch`** for the containers of your compose stack.
@@ -144,9 +145,20 @@ The bubbles refresh on their own. GitHub is polled every 60 seconds, every 15 wh
 <tr><td width="92"><img src="docs/img/bubbles/reviews.png" width="64" height="64" alt=""></td><td>Review requests</td><td>Pull requests waiting for your review</td><td>Opens them</td></tr>
 <tr><td width="92"><img src="docs/img/bubbles/inbox.png" width="64" height="64" alt=""></td><td>GitHub inbox</td><td>Last GitHub event for you</td><td>Opens it</td></tr>
 <tr><td width="92"><img src="docs/img/bubbles/focus-running.png" width="64" height="64" alt=""></td><td>Focus timer</td><td>Time left</td><td>Starts or stops</td></tr>
+<tr><td width="92"><img src="docs/img/bubbles/excuse.png" width="64" height="64" alt=""></td><td>Dev excuses</td><td></td><td>Writes a random <a href="#dev-excuses">dev excuse</a> in the app in front</td></tr>
 </table>
 
-To try a bubble without the mouse, write its name to the trigger file: `echo commit > ~/.config/mx-dev-kit/trigger`. It also takes `push`, `pull`, `agent`, `claude`, `codex`, `gemini`, `copilot`, `audit`, `focus`, `inbox`, `notify` and `inbox-test`.
+To try a bubble without the mouse, write its name to the trigger file: `echo commit > ~/.config/mx-dev-kit/trigger`. It also takes `push`, `pull`, `agent`, `claude`, `codex`, `gemini`, `copilot`, `audit`, `focus`, `excuse`, `inbox`, `notify` and `inbox-test`.
+
+## Dev excuses
+
+<img src="docs/img/bubbles/excuse.png" width="64" height="64" alt="The Dev excuses bubble: a white smiley on pink">
+
+The **Dev excuses** bubble writes a random excuse in the app in front: a chat, a ticket, a pull request comment. Some forty excuses in English and forty in French, in the language of the plugin, never the same one twice in a row. It works on my machine.
+
+The excuse goes through the clipboard: it is copied, Cmd+V (Ctrl+V on Windows) pastes it, and what you had copied comes back a moment later. On Windows, only text comes back.
+
+On macOS, typing in another app needs the **Accessibility** permission for Logi Plugin Service, in System Settings > Privacy & Security > Accessibility. If it does not have it, the first click asks macOS to show the request. Without it, the excuse stays in the clipboard and a notification shows it: paste it yourself.
 
 ## Scripts
 

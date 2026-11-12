@@ -287,6 +287,13 @@ public static class BubblePainter
                 b.DrawLine(cx + r * 0.02f, cy + r * 0.38f, cx + r * 0.62f, cy + r * 0.38f, c, t);
                 break;
             }
+
+            case Glyph.Smiley:
+                Circle(b, cx, cy, r, c, t);
+                Dot(b, cx - r * 0.38f, cy - r * 0.2f, t * 2f, c);
+                Dot(b, cx + r * 0.38f, cy - r * 0.2f, t * 2f, c);
+                b.DrawArc((int)cx, (int)cy, Math.Max(1, (int)(r * 0.5f)), 30, 120, c, t);
+                break;
         }
     }
 

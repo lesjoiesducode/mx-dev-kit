@@ -13,6 +13,7 @@ public sealed class Strings
         GroupProject = "Current project",
         GroupGitHub = "GitHub",
         GroupFocus = "Focus",
+        GroupExtras = "Extras",
 
         ProjectName = "Project",
         ProjectDescription = "Name and branch of the current project (last folder used in the terminal or the Finder). Click: opens the GitHub repository, or the folder.",
@@ -39,6 +40,8 @@ public sealed class Strings
         InboxDescription = "Last GitHub event for you: review requested, mention, assignment, your pull request approved, merged, with changes requested or a red CI. Vibrates and notifies. Click: opens it.",
         FocusName = "Focus timer",
         FocusDescription = "Focus timer with a break. Click to start or stop. Vibrates at the end of the session and of the break.",
+        ExcuseName = "Dev excuses",
+        ExcuseDescription = "Click: types a random developer excuse in the app in front. Without the Accessibility permission, the excuse is copied to the clipboard instead.",
 
         ShortIssues = "Issues",
         ShortPullRequests = "PRs",
@@ -86,6 +89,7 @@ public sealed class Strings
 
         NotificationTest = "Notifications work. A click opens your GitHub notifications.",
         NoProject = "No current project yet. Open a terminal in a repository, or a Finder window on macOS, then click again.",
+        ExcuseCopied = "Excuse copied",
 
         Confirm = "Confirm?",
         CommitRefused = "Commit refused",
@@ -106,6 +110,7 @@ public sealed class Strings
         GroupProject = "Projet courant",
         GroupGitHub = "GitHub",
         GroupFocus = "Focus",
+        GroupExtras = "Extras",
 
         ProjectName = "Projet",
         ProjectDescription = "Nom et branche du projet courant (dernier dossier utilisé dans le terminal ou le Finder). Clic : ouvre le dépôt GitHub, sinon le dossier.",
@@ -132,6 +137,8 @@ public sealed class Strings
         InboxDescription = "Dernier événement GitHub qui vous concerne : revue demandée, mention, assignation, votre PR approuvée, fusionnée, avec des changements demandés ou une CI rouge. Vibre et notifie. Clic : l'ouvre.",
         FocusName = "Minuteur focus",
         FocusDescription = "Minuteur de concentration suivi d'une pause. Clic pour lancer ou arrêter. Vibre à la fin de la session et de la pause.",
+        ExcuseName = "Excuses de dev",
+        ExcuseDescription = "Clic : écrit une excuse de dev au hasard dans l'application au premier plan. Sans la permission Accessibilité, l'excuse est copiée dans le presse-papiers.",
 
         ShortIssues = "Issues",
         ShortPullRequests = "PR",
@@ -179,6 +186,7 @@ public sealed class Strings
 
         NotificationTest = "Les notifications fonctionnent. Un clic ouvre vos notifications GitHub.",
         NoProject = "Pas encore de projet courant. Ouvrez un terminal dans un dépôt, ou une fenêtre du Finder sur macOS, puis cliquez à nouveau.",
+        ExcuseCopied = "Excuse copiée",
 
         Confirm = "Confirmer\u00A0?",
         CommitRefused = "Commit refusé",
@@ -197,6 +205,7 @@ public sealed class Strings
     public string GroupProject { get; private init; } = "";
     public string GroupGitHub { get; private init; } = "";
     public string GroupFocus { get; private init; } = "";
+    public string GroupExtras { get; private init; } = "";
     public string ProjectName { get; private init; } = "";
     public string ProjectDescription { get; private init; } = "";
     public string IssuesName { get; private init; } = "";
@@ -222,6 +231,8 @@ public sealed class Strings
     public string InboxDescription { get; private init; } = "";
     public string FocusName { get; private init; } = "";
     public string FocusDescription { get; private init; } = "";
+    public string ExcuseName { get; private init; } = "";
+    public string ExcuseDescription { get; private init; } = "";
     public string ShortIssues { get; private init; } = "";
     public string ShortPullRequests { get; private init; } = "";
     public string ShortCi { get; private init; } = "";
@@ -264,6 +275,7 @@ public sealed class Strings
     public string InboxMore { get; private init; } = "";
     public string NotificationTest { get; private init; } = "";
     public string NoProject { get; private init; } = "";
+    public string ExcuseCopied { get; private init; } = "";
     public string Confirm { get; private init; } = "";
     public string CommitRefused { get; private init; } = "";
     public string CommitUnmerged { get; private init; } = "";

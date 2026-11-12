@@ -27,11 +27,14 @@ internal static class DevKit
 
     public static FocusService Focus { get; }
 
+    public static ExcuseService Excuses { get; } = new();
+
     public static event Action? ConfigChanged;
 
     public static void Start(Plugin plugin)
     {
         Haptics.Register(plugin, Strings);
+        Excuses.Register(plugin);
         Project.Start();
         GitHub.Start();
         Focus.Start();
