@@ -450,6 +450,55 @@ if ($tools) {
     }
 }
 
+# GitHub CLI runs the GitHub bubbles, the GitHub inbox and ci-watch. Optional: offered, never required.
+if ($plugin -or $tools) {
+    Write-Host "`n== GitHub"
+    $canAsk = -not $parts -and -not $Yes -and (Test-CanAsk)
+    $gh = Get-Command gh -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $gh) {
+        if ($canAsk -and (Get-Command winget -CommandType Application -ErrorAction SilentlyContinue)) {
+            if ((Read-Host 'GitHub CLI (gh) runs the GitHub bubbles, the GitHub inbox and ci-watch: install it with winget? [Y/n]') -match '^[nN]') {
+                Write-Host 'Skipped: the GitHub bubbles stay off until gh is installed (winget install GitHub.cli) and signed in.'
+            } else {
+                try { & winget install --id GitHub.cli -e --source winget } catch { Write-Host "winget: $($_.Exception.Message)" }
+                # winget does not update the PATH of this session.
+                if ($env:OS -eq 'Windows_NT') {
+                    $env:Path = "$env:Path;" + [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+                }
+                $gh = Get-Command gh -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+                if (-not $gh) { Write-Host 'winget install GitHub.cli failed: the GitHub bubbles stay off until gh is installed.' }
+            }
+        } else {
+            Write-Host 'GitHub CLI not found: the GitHub bubbles, the GitHub inbox and ci-watch stay off.'
+            Write-Host 'Install it from https://cli.github.com (winget install GitHub.cli), then run gh auth login.'
+        }
+    }
+    if ($gh) {
+        # gh auth token reads the stored credentials only (no network, no prompt); older gh: auth status.
+        # Windows PowerShell turns the stderr of a native command into errors: none may stop the install.
+        $signedIn = $false
+        foreach ($check in @(@('auth', 'token'), @('auth', 'status'))) {
+            $previous = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try { & $gh.Source @check *> $null; $signedIn = $LASTEXITCODE -eq 0 } catch { $signedIn = $false } finally { $ErrorActionPreference = $previous }
+            if ($signedIn) { break }
+        }
+        if ($signedIn) {
+            Write-Host 'GitHub CLI signed in: the GitHub bubbles are on.'
+        } elseif ($canAsk) {
+            if ((Read-Host 'Sign in to GitHub now with gh auth login, for the GitHub bubbles? [Y/n]') -match '^[nN]') {
+                Write-Host 'Skipped: run gh auth login later to turn the GitHub bubbles on.'
+            } else {
+                $ok = $false
+                try { & $gh.Source auth login; $ok = $LASTEXITCODE -eq 0 } catch { }
+                if ($ok) { Write-Host 'Signed in: the GitHub bubbles are on.' } else { Write-Host 'gh auth login did not finish: run it later to turn the GitHub bubbles on.' }
+            }
+        } else {
+            Write-Host 'GitHub CLI found but not signed in: run gh auth login to turn the GitHub bubbles on.'
+        }
+    }
+}
+
 Write-Host "`n== Next steps"
 $n = 0
 if ($tools) {
@@ -467,8 +516,8 @@ if ($plugin) {
     Write-Host '   If a bubble shows only its name, edit its icon once and reset it to see the live image.'
 }
 $n++
-Write-Host "$n. Optional tools, each for its own feature: gh (GitHub bubbles: gh auth login), osv-scanner (vulnerabilities"
-Write-Host '   for every stack), docker (docker-watch). Nothing breaks without them.'
+Write-Host "$n. Optional tools, each for its own feature: osv-scanner (vulnerabilities for every stack),"
+Write-Host '   docker (docker-watch). Nothing breaks without them.'
 if ($tools) {
     $n++
     Write-Host "$n. Notifications are native toasts, nothing to install. Test: & `"$state\bin\mx-notify.ps1`" 'MX Dev Kit' 'It works' https://github.com"

@@ -398,6 +398,60 @@ if [ "$(uname -s)" = Darwin ]; then
       ko "install.sh without a terminal installs every part" "$(cat "$work/out")"; fi
     as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
     rm -rf "$uplugins/HapticWeb"
+
+    # GitHub CLI: offered with Homebrew when it is missing, then gh auth login. Fake brew and gh.
+    ghroot="$work/brewroot"
+    mkdir -p "$ghroot/bin"
+    cat > "$work/fake-gh" <<'FAKE'
+#!/bin/sh
+line=gh; for a in "$@"; do line="$line|$a"; done; printf '%s\n' "$line" >> "$MX_TEST_CALLS"
+case "$1 $2" in "auth token"|"auth status") exit "${MX_TEST_GH_AUTH:-1}" ;; esac
+exit 0
+FAKE
+    cat > "$ghroot/bin/brew" <<'FAKE'
+#!/bin/sh
+line=brew; for a in "$@"; do line="$line|$a"; done; printf '%s\n' "$line" >> "$MX_TEST_CALLS"
+case "$1" in
+  --prefix) printf '%s\n' "$MX_TEST_BREW_PREFIX" ;;
+  install) [ "$2" = gh ] && cp "$MX_TEST_FAKE_GH" "$MX_TEST_BREW_PREFIX/bin/gh" && chmod +x "$MX_TEST_BREW_PREFIX/bin/gh" ;;
+esac
+exit 0
+FAKE
+    chmod +x "$ghroot/bin/brew"
+    answer_gh() { auth=$1 a=$2; shift 2; python3 -I "$root/tests/shell/answer.py" "$a" env -i HOME="$u" PATH="$ghroot/bin:$user_path" SHELL=/bin/zsh \
+      MX_TEST_CALLS="$calls" MX_DEV_KIT_INSTALL_WAIT=0 MX_DEV_KIT_RELEASE_URL="file://$release" MX_HAPTIC_WEB_URL="$hw_url" \
+      MX_TEST_BREW_PREFIX="$ghroot" MX_TEST_FAKE_GH="$work/fake-gh" MX_TEST_GH_AUTH="$auth" "$@"; }
+
+    expect "install.sh offers GitHub CLI, Enter twice" 0 answer_gh 1 "y,n,n" sh "$root/install.sh"
+    output_has "install.sh asks about GitHub CLI" "GitHub CLI (gh) runs the GitHub bubbles, the GitHub inbox and ci-watch: install it with Homebrew? [Y/n]"
+    called "Enter installs gh with Homebrew" "brew|install|gh"
+    output_has "install.sh offers to sign in" "Sign in to GitHub now with gh auth login, for the GitHub bubbles? [Y/n]"
+    called "Enter runs gh auth login" "gh|auth|login"
+    not_called "terminal-notifier stays [y/N]: Enter installs nothing else" "brew|install|terminal-notifier"
+    as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+    rm -f "$ghroot/bin/gh"
+
+    expect "install.sh: n to GitHub CLI" 0 answer_gh 1 "y,n,n,n" sh "$root/install.sh"
+    if grep -q '^brew|install|gh' "$calls"; then ko "n to GitHub CLI installs nothing" "$(cat "$calls")"; else ok; fi
+    output_has "n to GitHub CLI says how to get it later" "the GitHub bubbles stay off until gh is installed"
+    as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+
+    cp "$work/fake-gh" "$ghroot/bin/gh"
+    expect "install.sh with gh signed in" 0 answer_gh 0 "y,n,n" sh "$root/install.sh"
+    output_has "gh signed in: nothing asked" "GitHub CLI signed in: the GitHub bubbles are on."
+    if grep -q 'Sign in to GitHub now' "$work/out"; then ko "no sign-in question when gh is signed in" "$(cat "$work/out")"; else ok; fi
+    as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+
+    expect "install.sh: gh not signed in, n" 0 answer_gh 1 "y,n,n,n" sh "$root/install.sh"
+    if grep -q '^gh|auth|login' "$calls"; then ko "n to signing in runs no gh auth login" "$(cat "$calls")"; else ok; fi
+    output_has "n to signing in says how to do it later" "run gh auth login later"
+    as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+
+    expect "install.sh --yes with gh not signed in" 0 answer_gh 1 "" sh "$root/install.sh" --yes --no-haptic-web
+    if grep -q '^gh|auth|login\|^brew|install' "$calls"; then ko "--yes asks nothing and installs nothing for GitHub" "$(cat "$calls")"; else ok; fi
+    output_has "--yes says to sign in" "GitHub CLI found but not signed in: run gh auth login"
+    as_user sh "$ustate/uninstall.sh" --purge > /dev/null 2>&1
+    rm -f "$ghroot/bin/gh"
   else
     printf 'skip  the installer questions (no python3)\n'
   fi

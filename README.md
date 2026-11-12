@@ -39,7 +39,7 @@ Some features use a tool you may already have. Without it, that feature stays of
 | Tool | Turns on |
 |---|---|
 | Git | The project bubbles |
-| [GitHub CLI](https://cli.github.com), after `gh auth login` | GitHub bubbles, GitHub inbox, `ci-watch`. github.com only. |
+| [GitHub CLI](https://cli.github.com), after `gh auth login` | GitHub bubbles, GitHub inbox, `ci-watch`. github.com only. The installer offers to install it (Homebrew, winget) and to sign you in. |
 | [osv-scanner](https://google.github.io/osv-scanner/) | Vulnerabilities for every lockfile. Without it, npm projects only. |
 | Docker | `docker-watch` |
 | [terminal-notifier](https://github.com/julienXX/terminal-notifier), macOS | Notifications that open a page when clicked |
@@ -58,7 +58,7 @@ curl -fsSL https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download
 irm https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/install.ps1 | iex
 ```
 
-1. **Run the installer.** It asks about each part (the Actions Ring plugin, the coding agent haptics, the terminal integration) and Enter means yes.
+1. **Run the installer.** It asks about each part (the Actions Ring plugin, the coding agent haptics, the terminal integration) and Enter means yes. If GitHub CLI is missing or signed out, it offers to install it and sign you in, for the GitHub bubbles.
 2. **Give the Finder a ring of its own (recommended).** Options+ applies a ring to every application by default, so your usual actions would make way for git. Keep the dev ring for the place where you open your projects instead: in Options+, open your device, add an application and browse to `/System/Library/CoreServices/Finder.app` (in the file dialog, Cmd+Shift+G lets you type the path). On Windows, the File Explorer is `C:\Windows\explorer.exe`. Add your terminal or your editor the same way if you want the ring there too. The bubbles follow the folder of the front Finder or File Explorer window, and that of your last terminal prompt.
 3. **Fill the ring.** In Options+, open your device, select that application, then **Actions Ring**, and drag actions from **MX Dev Kit** onto a ring. A good start is **Project**, **CI status**, **Pull requests**, **Commit all changes**, **Push**, **Pull**, the bubble of your coding agent and **GitHub inbox**.
 4. **If a bubble shows only its name**, click the pencil on its icon, reset the icon with the round arrow above the preview, then **Apply** and **Save**. Once is enough for that bubble.

@@ -126,6 +126,29 @@ Describe 'install.ps1 run from <Edition>' -ForEach $editions {
         $after.hooks.PSObject.Properties['UserPromptSubmit'] | Should -BeNullOrEmpty
         Test-Path (Join-Path $h.Copilot 'hooks\mx-dev-kit.json') | Should -BeFalse
     }
+
+    It 'tells whether GitHub CLI is signed in, and asks nothing without a console' {
+        # A fake gh first on the PATH: auth token and auth status exit with MX_TEST_GH_AUTH.
+        $bin = Join-Path $h.Dir 'fake-gh'
+        New-Item -ItemType Directory -Force -Path $bin | Out-Null
+        if ($OnWindows) {
+            [IO.File]::WriteAllText((Join-Path $bin 'gh.cmd'), "@echo off`r`nif `"%1 %2`"==`"auth login`" exit /b 0`r`nexit /b %MX_TEST_GH_AUTH%`r`n")
+        } else {
+            $fake = Join-Path $bin 'gh'
+            [IO.File]::WriteAllText($fake, "#!/bin/sh`ncase `"`$1 `$2`" in `"auth login`") exit 0 ;; esac`nexit `"`$MX_TEST_GH_AUTH`"`n")
+            & chmod +x $fake
+        }
+        $path = $bin + [IO.Path]::PathSeparator + $env:PATH
+
+        $out = Invoke-Ps $Edition $h -File $install -Arguments '-Only', 'shell', '-NoHapticWeb' -Variables @{ PATH = $path; MX_TEST_GH_AUTH = '1' }
+        $out.ExitCode | Should -Be 0 -Because ($out.Out + $out.Err)
+        $out.Out | Should -Match 'GitHub CLI found but not signed in: run gh auth login'
+        $out.Out | Should -Not -Match 'Sign in to GitHub now'
+
+        $in = Invoke-Ps $Edition $h -File $install -Arguments '-Only', 'shell', '-NoHapticWeb' -Variables @{ PATH = $path; MX_TEST_GH_AUTH = '0' }
+        $in.ExitCode | Should -Be 0 -Because ($in.Out + $in.Err)
+        $in.Out | Should -Match 'GitHub CLI signed in: the GitHub bubbles are on'
+    }
 }
 
 Describe 'install.ps1 without PowerShell 7' -Skip:(-not $OnWindows) {

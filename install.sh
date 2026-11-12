@@ -450,6 +450,53 @@ if [ "$tools" = 1 ]; then
   fi
 fi
 
+# GitHub CLI runs the GitHub bubbles, the GitHub inbox and ci-watch. Optional: offered, never required.
+if [ "$plugin" = 1 ] || [ "$tools" = 1 ]; then
+  step "GitHub"
+  gh_bin=$(command -v gh 2>/dev/null || true)
+  if [ -z "$gh_bin" ]; then
+    if [ "$asks" = 1 ] && command -v brew >/dev/null 2>&1; then
+      ask 'GitHub CLI (gh) runs the GitHub bubbles, the GitHub inbox and ci-watch: install it with Homebrew? [Y/n] '
+      case $answer in
+        [nN]*) say "Skipped: the GitHub bubbles stay off until gh is installed (brew install gh) and signed in." ;;
+        *)
+          if brew install gh; then
+            gh_bin=$(command -v gh 2>/dev/null || true)
+            [ -n "$gh_bin" ] || gh_bin="$(brew --prefix 2>/dev/null)/bin/gh"
+            [ -x "$gh_bin" ] || gh_bin=""
+          fi
+          [ -n "$gh_bin" ] || say "brew install gh failed: the GitHub bubbles stay off until gh is installed."
+          ;;
+      esac
+    else
+      say "GitHub CLI not found: the GitHub bubbles, the GitHub inbox and ci-watch stay off."
+      say "Install it from https://cli.github.com (brew install gh), then run gh auth login."
+    fi
+  fi
+  # Through curl | sh, gh asks its questions on the terminal too.
+  gh_login() { if [ -t 0 ]; then "$gh_bin" auth login; else "$gh_bin" auth login </dev/tty; fi; }
+  if [ -n "$gh_bin" ]; then
+    # gh auth token reads the stored credentials only (no network, no prompt); older gh: auth status.
+    if "$gh_bin" auth token >/dev/null 2>&1 || "$gh_bin" auth status >/dev/null 2>&1; then
+      say "GitHub CLI signed in: the GitHub bubbles are on."
+    elif [ "$asks" = 1 ]; then
+      ask 'Sign in to GitHub now with gh auth login, for the GitHub bubbles? [Y/n] '
+      case $answer in
+        [nN]*) say "Skipped: run gh auth login later to turn the GitHub bubbles on." ;;
+        *)
+          if gh_login; then
+            say "Signed in: the GitHub bubbles are on."
+          else
+            say "gh auth login did not finish: run it later to turn the GitHub bubbles on."
+          fi
+          ;;
+      esac
+    else
+      say "GitHub CLI found but not signed in: run gh auth login to turn the GitHub bubbles on."
+    fi
+  fi
+fi
+
 step "Notifications"
 if command -v terminal-notifier >/dev/null 2>&1 || [ -x /opt/homebrew/bin/terminal-notifier ] || [ -x /usr/local/bin/terminal-notifier ]; then
   say "terminal-notifier found: a click on a notification opens the page."
@@ -480,6 +527,6 @@ if [ "$plugin" = 1 ]; then
   say "$n. Logi Options+ > your device > Actions Ring: drag actions from \"MX Dev Kit\" onto the ring."
   say "   If a bubble shows only its name, edit its icon once and reset it to see the live image."
 fi
-say "$((n + 1)). Optional tools, each for its own feature: gh (GitHub bubbles: gh auth login), osv-scanner (vulnerabilities"
-say "   for every stack), docker (docker-watch). Nothing breaks without them."
+say "$((n + 1)). Optional tools, each for its own feature: osv-scanner (vulnerabilities for every stack),"
+say "   docker (docker-watch). Nothing breaks without them."
 say "Uninstall: $state/uninstall.sh"

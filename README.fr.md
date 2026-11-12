@@ -39,7 +39,7 @@ Certaines fonctions s'appuient sur un outil que vous avez peut-être déjà. San
 | Outil | Active |
 |---|---|
 | Git | Les bulles de projet |
-| [GitHub CLI](https://cli.github.com), après `gh auth login` | Les bulles GitHub, la boîte GitHub, `ci-watch`. github.com uniquement. |
+| [GitHub CLI](https://cli.github.com), après `gh auth login` | Les bulles GitHub, la boîte GitHub, `ci-watch`. github.com uniquement. L'installeur propose de l'installer (Homebrew, winget) et de vous connecter. |
 | [osv-scanner](https://google.github.io/osv-scanner/) | Les failles de tous les fichiers de verrouillage. Sans lui, seulement les projets npm. |
 | Docker | `docker-watch` |
 | [terminal-notifier](https://github.com/julienXX/terminal-notifier), macOS | Des notifications qui ouvrent une page quand on clique dessus |
@@ -58,7 +58,7 @@ curl -fsSL https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download
 irm https://github.com/lesjoiesducode/mx-dev-kit/releases/latest/download/install.ps1 | iex
 ```
 
-1. **Lancez l'installeur.** Il pose une question par brique (le plugin Actions Ring, les vibrations des agents de code, l'intégration au terminal) ; Entrée vaut oui.
+1. **Lancez l'installeur.** Il pose une question par brique (le plugin Actions Ring, les vibrations des agents de code, l'intégration au terminal) ; Entrée vaut oui. Si GitHub CLI manque ou n'est pas connecté, il propose de l'installer et de vous connecter, pour les bulles GitHub.
 2. **Donnez au Finder son propre anneau (conseillé).** Par défaut, Options+ applique un anneau à toutes les applications : vos actions habituelles laisseraient la place à git. Réservez plutôt l'anneau de dev à l'endroit où vous ouvrez vos projets : dans Options+, ouvrez votre périphérique, ajoutez une application et allez chercher `/System/Library/CoreServices/Finder.app` (dans la fenêtre de sélection, Cmd+Maj+G permet de taper le chemin). Sous Windows, l'Explorateur de fichiers est `C:\Windows\explorer.exe`. Ajoutez de la même façon votre terminal ou votre éditeur si vous voulez aussi l'anneau dedans. Les bulles suivent le dossier de la fenêtre du Finder ou de l'Explorateur au premier plan, et celui de votre dernière commande dans le terminal.
 3. **Remplissez l'anneau.** Dans Options+, ouvrez votre périphérique, choisissez cette application, puis **Actions Ring**, et glissez des actions de **MX Dev Kit** sur un anneau. Pour commencer : **Projet**, **CI du projet**, **PR du projet**, **Commit du projet**, **Push du projet**, **Pull du projet**, la bulle de votre agent de code et **Boîte GitHub**.
 4. **Si une bulle n'affiche que son nom**, cliquez sur le crayon de son icône, réinitialisez l'icône avec la flèche circulaire au-dessus de l'aperçu, puis appliquez et enregistrez. Une fois suffit pour cette bulle.
